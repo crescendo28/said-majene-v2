@@ -1,96 +1,94 @@
 import Link from 'next/link';
 import { getHomeData, getGlobalSettings } from '@/lib/googleSheets';
-import GenericDashboard from '@/components/GenericDashboard';
+import HomeIndicatorCard from '@/components/HomeIndicatorCard';
 import { FileDown, ArrowRight, Activity, TrendingUp } from 'lucide-react';
 
 export const revalidate = 3600;
 
 export default async function Home() {
-  // Fetch data specifically for Home (ShowOnHome = TRUE)
   const { meta, data } = await getHomeData();
   const settings = await getGlobalSettings();
   const publicationLink = settings['publication_link'] || '#';
 
-  return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      
-      {/* HERO SECTION */}
-      <section className="bg-slate-900 text-white relative overflow-hidden">
-        {/* Abstract Background */}
-        <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-           <svg width="400" height="400" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#10B981" d="M44.7,-76.4C58.9,-69.2,71.8,-59.1,81.6,-46.6C91.4,-34.1,98.1,-19.2,95.8,-5.3C93.5,8.6,82.2,21.5,70.6,31.7C59,41.9,47.1,49.5,35.4,56.7C23.7,63.9,12.1,70.7,-0.9,72.3C-13.9,73.9,-26.4,70.2,-37.5,63.3C-48.6,56.4,-58.3,46.3,-66.2,34.6C-74.1,22.9,-80.2,9.6,-80.6,-3.9C-81,-17.4,-75.7,-31.1,-66.3,-41.8C-56.9,-52.5,-43.4,-60.1,-30.1,-67.9C-16.8,-75.7,-3.7,-83.7,5.5,-85.4C14.7,-87.1,29.4,-82.5,44.7,-76.4Z" transform="translate(100 100)" />
-           </svg>
-        </div>
+  // Helper to get ALL historical data for a variable
+  const getVariableHistory = (varId: string) => {
+    return data
+        .filter((d: any) => String(d.id_variable) === String(varId))
+        .sort((a: any, b: any) => Number(a.Tahun) - Number(b.Tahun));
+  };
 
-        <div className="max-w-7xl mx-auto px-6 py-20 relative z-10">
-          <div className="max-w-3xl space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-              <Activity size={14} /> Portal Data Terpadu
-            </div>
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">
-              SAID <span className="text-emerald-400">Majene</span>
+  return (
+    <main className="min-h-screen bg-[#f5f7fb] text-slate-900 font-sans">
+      
+      {/* NAVBAR removed - using global layout navbar */}
+
+      {/* HERO SECTION */}
+      <section className="bg-slate-900 text-white relative overflow-hidden pt-32 pb-48 rounded-b-[40px] shadow-2xl shadow-slate-900/20">
+        
+        {/* Background Gradients */}
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80"></div>
+        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
+            
+            <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-2">
+                Analisis Isu Terkini
             </h1>
-            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl">
-              Sistem Analisis Indikator Daerah Kabupaten Majene. Menyajikan data strategis, analisis tren, dan capaian kinerja pembangunan dalam satu dashboard terintegrasi.
+            <h2 className="text-3xl md:text-5xl font-black text-emerald-400 tracking-tight mb-8">
+                Kabupaten Majene
+            </h2>
+            
+            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto mb-10">
+               Platform integrasi data strategis untuk memantau indikator Ekonomi dan Sosial secara real-time.
             </p>
             
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Link 
-                href="/dashboard/ekonomi" 
-                className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold rounded-xl transition-all flex items-center gap-2"
-              >
-                Lihat Dashboard <ArrowRight size={18} />
-              </Link>
-              <a 
-                href={publicationLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold rounded-xl transition-all flex items-center gap-2"
-              >
-                <FileDown size={18} /> Unduh Publikasi
-              </a>
+            <div className="flex justify-center gap-4">
+                <a 
+                    href={publicationLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-8 py-4 bg-white text-slate-900 font-bold rounded-full shadow-[0_10px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-transform flex items-center gap-2 group"
+                >
+                    <FileDown size={20} className="text-slate-400 group-hover:text-emerald-600 transition-colors" /> 
+                    <span>Unduh Publikasi PDF</span>
+                </a>
             </div>
-          </div>
+
         </div>
       </section>
 
-      {/* DASHBOARD PREVIEW SECTION */}
-      <section className="py-16 px-6">
-        <div className="max-w-7xl mx-auto space-y-12">
+      {/* CARDS SECTION (Overlapping Hero) */}
+      <section className="px-6 -mt-32 relative z-20 pb-20">
+        <div className="max-w-7xl mx-auto">
             
-            <div className="flex justify-between items-end border-b border-slate-200 pb-6">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                        <TrendingUp className="text-emerald-500" /> Indikator Unggulan
-                    </h2>
-                    <p className="text-slate-500 mt-2">
-                        Pantauan langsung indikator strategis yang dipilih untuk ditampilkan di beranda.
-                    </p>
-                </div>
-            </div>
-
-            {/* Use GenericDashboard Logic to Render Cards */}
             {meta.length > 0 ? (
-                <div className="bg-slate-50 rounded-3xl">
-                     <GenericDashboard 
-                        data={data} 
-                        meta={meta} 
-                        category="Indikator Strategis" 
-                     />
+                <div className="flex flex-wrap justify-center gap-8">
+                     {meta.map((m: any) => {
+                        const history = getVariableHistory(m.Id);
+                        if (!history || history.length === 0) return null;
+                        
+                        return (
+                            <div key={m.Id} className="w-full md:w-[calc(50%-16px)] min-w-[320px] max-w-[700px]">
+                                <HomeIndicatorCard 
+                                    meta={m}
+                                    history={history}
+                                />
+                            </div>
+                        );
+                     })}
                 </div>
             ) : (
-                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300">
-                    <p className="text-slate-400">Belum ada indikator yang dipilih untuk beranda.</p>
+                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm">
+                    <p className="text-slate-400 font-medium">Belum ada indikator yang dipilih untuk beranda.</p>
                 </div>
             )}
 
         </div>
       </section>
 
-      <footer className="bg-white border-t border-slate-200 py-12 mt-12">
+      <footer className="bg-white border-t border-slate-200 py-12">
         <div className="max-w-7xl mx-auto px-6 text-center">
-            <p className="text-sm text-slate-500">© 2025 BPS Kabupaten Majene. All rights reserved.</p>
+            <p className="text-sm text-slate-500 font-medium">© 2025 BPS Kabupaten Majene. Developed by IPDS.</p>
         </div>
       </footer>
     </main>

@@ -15,9 +15,9 @@ export async function saveConfig(formData: FormData) {
   const chartType = formData.get('chartType') as string;
   const color = formData.get('color') as string;
   const trendLogic = formData.get('trendLogic') as string;
-  // Checkbox: if checked returns 'on', else null
   const showOnHome = formData.get('showOnHome') === 'on' ? 'TRUE' : 'FALSE';
   const targetRPJMD = formData.get('targetRPJMD') as string;
+  const dataFilter = formData.get('dataFilter') as string;
 
   if (status) updates.Status = status;
   if (category) updates.Kategori = category;
@@ -27,6 +27,7 @@ export async function saveConfig(formData: FormData) {
   if (trendLogic) updates.TrendLogic = trendLogic;
   updates.ShowOnHome = showOnHome;
   if (targetRPJMD !== null) updates.TargetRPJMD = targetRPJMD;
+  if (dataFilter !== null) updates.DataFilter = dataFilter;
 
   await updateKonfig(id, updates);
   
@@ -54,7 +55,8 @@ export async function createIndicator(prevState: any, formData: FormData) {
     Warna: formData.get('color') || 'blue',
     TrendLogic: formData.get('trendLogic') || 'UpIsGood',
     ShowOnHome: 'FALSE',
-    TargetRPJMD: ''
+    TargetRPJMD: '',
+    DataFilter: formData.get('dataFilter') || ''
   };
 
   await addKonfigRow(newData);

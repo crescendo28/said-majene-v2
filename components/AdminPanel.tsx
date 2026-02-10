@@ -5,7 +5,7 @@ import { saveConfig, createIndicator, initSync, processSyncItem, finishSync, upd
 import { 
   Search, Plus, RefreshCw, Loader2, Pencil, 
   BarChart2, Palette, TrendingUp, LayoutDashboard,
-  Home, Target, Globe, FileText, List
+  Home, Target, Globe, FileText, List, Filter
 } from 'lucide-react';
 
 interface AdminPanelProps {
@@ -42,6 +42,7 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
   // New Fields
   const [formShowHome, setFormShowHome] = useState(false);
   const [formTargetRPJMD, setFormTargetRPJMD] = useState('');
+  const [formDataFilter, setFormDataFilter] = useState('');
 
   // Autocomplete State
   const [idSuggestions, setIdSuggestions] = useState<any[]>([]);
@@ -62,7 +63,7 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
     setModalMode('add');
     setFormId(''); setFormLabel(''); setFormCategory(''); setFormStatus('Aktif');
     setFormDesc(''); setFormChartType('line'); setFormColor('blue'); setFormTrend('UpIsGood');
-    setFormShowHome(false); setFormTargetRPJMD('');
+    setFormShowHome(false); setFormTargetRPJMD(''); setFormDataFilter('');
     setIdSuggestions([]); setShowIdSuggestions(false);
     setIsModalOpen(true);
   };
@@ -79,6 +80,7 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
     setFormTrend(row.TrendLogic || 'UpIsGood');
     setFormShowHome(row.ShowOnHome);
     setFormTargetRPJMD(row.TargetRPJMD || '');
+    setFormDataFilter(row.DataFilter || '');
     setShowIdSuggestions(false);
     setIsModalOpen(true);
   };
@@ -105,7 +107,6 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
   const selectSuggestion = (item: any) => {
     setFormId(item.var_id || item.id_variable || item.Id);
     setFormLabel(item['Nama Variabel'] || item.label || item.Label);
-    // Optionally auto-fill category if available in metadata
     if (item.kategori || item.Category) setFormCategory(item.kategori || item.Category);
     setShowIdSuggestions(false);
   };
@@ -289,6 +290,7 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
                                             <div className="font-bold text-slate-800">{row.Label}</div>
                                         </div>
                                         {row.TargetRPJMD && <div className="text-xs text-indigo-500 mt-1 font-medium">Target: {row.TargetRPJMD}</div>}
+                                        {row.DataFilter && <div className="text-[10px] text-slate-400 mt-0.5">Filter: {row.DataFilter}</div>}
                                     </td>
                                     <td className="p-5">
                                         <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md text-xs font-medium border border-slate-200 capitalize">
@@ -411,6 +413,22 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
                                 <div>
                                     <label className="block text-xs font-bold uppercase mb-1 text-slate-500">Kategori</label>
                                     <input name="category" list="category-list" value={formCategory} onChange={e=>setFormCategory(e.target.value)} className="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none capitalize" placeholder="Contoh: Ekonomi"/>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold uppercase mb-1 text-slate-500 flex items-center gap-1">
+                                        <Filter size={12}/> Filter Data (Opsional)
+                                    </label>
+                                    <input 
+                                        name="dataFilter" 
+                                        value={formDataFilter} 
+                                        onChange={e=>setFormDataFilter(e.target.value)} 
+                                        className="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500" 
+                                        placeholder="Contoh: Produk Domestik Regional Bruto"
+                                        title="Gunakan ini jika satu ID Variable memiliki banyak baris data (kategori turunan) dan Anda hanya ingin menampilkan satu baris spesifik."
+                                    />
+                                    <p className="text-[10px] text-slate-400 mt-1">
+                                        Masukkan nilai kolom <b>'kategori'</b> di sheet Data yang ingin diambil. Kosongkan untuk mengambil semua.
+                                    </p>
                                 </div>
                              </div>
 
