@@ -1,3 +1,4 @@
+// ... (Imports & Auth same as before) ...
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 
@@ -25,10 +26,7 @@ export const getSheetData = async (sheetName: string) => {
     if (!sheet) return [];
     const rows = await sheet.getRows();
     return rows.map((row) => row.toObject());
-  } catch (error) {
-    console.error(`Error in getSheetData:`, error);
-    return [];
-  }
+  } catch (error) { return []; }
 };
 
 export const getDashboardData = async (slug: string) => {
@@ -36,7 +34,6 @@ export const getDashboardData = async (slug: string) => {
     const doc = await getDoc();
     const konfigSheet = doc.sheetsByTitle['Konfig'];
     const dataSheet = doc.sheetsByTitle['Data'];
-
     if (!konfigSheet || !dataSheet) return { meta: [], data: [] };
 
     const [konfigRows, dataRows] = await Promise.all([
@@ -52,22 +49,27 @@ export const getDashboardData = async (slug: string) => {
     });
 
     const activeIds = new Set(activeConfig.map(row => row.get('Id')));
-
     const rawData = dataRows.map(row => row.toObject());
     const filteredData = rawData.filter(row => activeIds.has(row.id_variable));
 
     const finalData = filteredData.map(row => {
       const config = activeConfig.find(c => c.get('Id') === row.id_variable);
-      return {
-        ...row,
-        variable_name: config?.get('Label') || row.id_variable
-      };
+      return { ...row, variable_name: config?.get('Label') || row.id_variable };
     });
 
-    return { meta: activeConfig.map(r => r.toObject()), data: finalData };
-  } catch (error) {
-    return { meta: [], data: [] };
-  }
+    const metaData = activeConfig.map(r => ({
+        Id: r.get('Id'),
+        Label: r.get('Label'),
+        Kategori: r.get('Kategori'),
+        Status: r.get('Status'),
+        Deskripsi: r.get('Deskripsi') || '',
+        TipeGrafik: r.get('TipeGrafik') || 'line',
+        Warna: r.get('Warna') || 'blue',
+        TrendLogic: r.get('TrendLogic') || 'UpIsGood'
+    }));
+
+    return { meta: metaData, data: finalData };
+  } catch (error) { return { meta: [], data: [] }; }
 };
 
 export const getNavLinks = async () => {
@@ -87,13 +89,19 @@ export const getNavLinks = async () => {
 
 // --- WRITE FUNCTIONS ---
 
-export const updateKonfig = async (id: string, newStatus: string, newCategory: string) => {
+export const updateKonfig = async (id: string, newStatus: string, newCategory: string, newDesc?: string, newChartType?: string, newColor?: string, newTrend?: string) => {
   const doc = await getDoc();
   const sheet = doc.sheetsByTitle['Konfig'];
   const rows = await sheet.getRows();
   const row = rows.find(r => r.get('Id') === id);
   if (row) {
-    row.assign({ Status: newStatus, Kategori: newCategory });
+    const updates: any = { Status: newStatus, Kategori: newCategory };
+    if (newDesc !== undefined) updates.Deskripsi = newDesc;
+    if (newChartType !== undefined) updates.TipeGrafik = newChartType;
+    if (newColor !== undefined) updates.Warna = newColor;
+    if (newTrend !== undefined) updates.TrendLogic = newTrend;
+    
+    row.assign(updates);
     await row.save();
   }
 };
@@ -104,33 +112,20 @@ export const addKonfigRow = async (newData: any) => {
     await sheet.addRow(newData);
 };
 
-// 1. Clear Data Sheet (Keeps Header)
 export const clearDataSheet = async () => {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle['Data'];
     if (sheet) {
-        // Clear all rows. Google-spreadsheet keeps headers by default when clearing rows logic is handled manually or via clear() 
-        // But clearRows() usually deletes rows. 
-        // Safer approach: Load all rows and delete them.
         const rows = await sheet.getRows();
         if(rows.length > 0) {
-            // Deleting in batch is faster usually, but library might not support batch delete easily
-            // We use clear() which clears content but keeps grid
             await sheet.clear(); 
-            // Re-write header immediately
-            await sheet.setHeaderRow([
-                'id_domain', 'kategori', 'Tahun', 'Periode', 'Pilih Tahun', 
-                'id_variable', 'Nama Variabel', 'Nilai', 'Satuan'
-            ]);
+            await sheet.setHeaderRow(['id_domain', 'kategori', 'Tahun', 'Periode', 'Pilih Tahun', 'id_variable', 'Nama Variabel', 'Nilai', 'Satuan']);
         }
     }
 };
 
-// 2. Append Data
 export const appendDataRows = async (rows: any[]) => {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle['Data'];
-    if (sheet && rows.length > 0) {
-        await sheet.addRows(rows);
-    }
+    if (sheet && rows.length > 0) await sheet.addRows(rows);
 };
