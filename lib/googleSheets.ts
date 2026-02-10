@@ -28,7 +28,62 @@ export const getSheetData = async (sheetName: string) => {
   } catch (error) { return []; }
 };
 
-// Used by Admin Panel to see EVERYTHING
+// --- SETTINGS ---
+export const getGlobalSettings = async () => {
+  try {
+    const doc = await getDoc();
+    let sheet = doc.sheetsByTitle['Settings'];
+    if (!sheet) {
+        try {
+            sheet = await doc.addSheet({ title: 'Settings', headerValues: ['Key', 'Value'] });
+        } catch (e) {
+            console.error("Could not create Settings sheet", e);
+            return {};
+        }
+    }
+    const rows = await sheet.getRows();
+    const settings: Record<string, string> = {};
+    rows.forEach(row => {
+        settings[row.get('Key')] = row.get('Value');
+    });
+    return settings;
+  } catch (error) {
+    console.error("Error fetching settings:", error);
+    return {};
+  }
+};
+
+export const saveGlobalSetting = async (key: string, value: string) => {
+    const doc = await getDoc();
+    let sheet = doc.sheetsByTitle['Settings'];
+    if (!sheet) sheet = await doc.addSheet({ title: 'Settings', headerValues: ['Key', 'Value'] });
+    const rows = await sheet.getRows();
+    const existing = rows.find(r => r.get('Key') === key);
+    if (existing) {
+        existing.assign({ Value: value });
+        await existing.save();
+    } else {
+        await sheet.addRow({ Key: key, Value: value });
+    }
+};
+
+// --- METADATA ---
+export const getMetadata = async () => {
+  try {
+    const doc = await getDoc();
+    // Assumes a sheet named 'Metadata' exists with columns like 'var_id' and 'Nama Variabel'
+    const sheet = doc.sheetsByTitle['Metadata']; 
+    if (!sheet) return [];
+    const rows = await sheet.getRows();
+    return rows.map(row => row.toObject());
+  } catch (error) { 
+    console.error("Error fetching metadata:", error);
+    return []; 
+  }
+};
+
+// --- VARIABLES ---
+
 export const getAllVariables = async () => {
   try {
     const doc = await getDoc();
@@ -43,7 +98,9 @@ export const getAllVariables = async () => {
       Deskripsi: row.get('Deskripsi') || '',
       TipeGrafik: row.get('TipeGrafik') || 'line',
       Warna: row.get('Warna') || 'blue',
-      TrendLogic: row.get('TrendLogic') || 'UpIsGood'
+      TrendLogic: row.get('TrendLogic') || 'UpIsGood',
+      ShowOnHome: row.get('ShowOnHome') === 'TRUE',
+      TargetRPJMD: row.get('TargetRPJMD') || ''
     }));
   } catch (error) { 
     console.error("Error fetching variables:", error);
@@ -87,11 +144,57 @@ export const getDashboardData = async (slug: string) => {
         Deskripsi: r.get('Deskripsi') || '',
         TipeGrafik: r.get('TipeGrafik') || 'line',
         Warna: r.get('Warna') || 'blue',
-        TrendLogic: r.get('TrendLogic') || 'UpIsGood'
+        TrendLogic: r.get('TrendLogic') || 'UpIsGood',
+        TargetRPJMD: r.get('TargetRPJMD') || ''
     }));
 
     return { meta: metaData, data: finalData };
   } catch (error) { return { meta: [], data: [] }; }
+};
+
+export const getHomeData = async () => {
+  try {
+    const doc = await getDoc();
+    const konfigSheet = doc.sheetsByTitle['Konfig'];
+    const dataSheet = doc.sheetsByTitle['Data'];
+    if (!konfigSheet || !dataSheet) return { meta: [], data: [] };
+
+    const [konfigRows, dataRows] = await Promise.all([
+      konfigSheet.getRows(),
+      dataSheet.getRows()
+    ]);
+
+    // Filter for ShowOnHome
+    const homeConfig = konfigRows.filter(row => {
+      return row.get('ShowOnHome') === 'TRUE' && row.get('Status') === 'Aktif';
+    });
+
+    const activeIds = new Set(homeConfig.map(row => row.get('Id')));
+    const rawData = dataRows.map(row => row.toObject());
+    const filteredData = rawData.filter(row => activeIds.has(row.id_variable));
+
+    const finalData = filteredData.map(row => {
+      const config = homeConfig.find(c => c.get('Id') === row.id_variable);
+      return { ...row, variable_name: config?.get('Label') || row.id_variable };
+    });
+
+    const metaData = homeConfig.map(r => ({
+        Id: r.get('Id'),
+        Label: r.get('Label'),
+        Kategori: r.get('Kategori'),
+        Status: r.get('Status'),
+        Deskripsi: r.get('Deskripsi') || '',
+        TipeGrafik: r.get('TipeGrafik') || 'line',
+        Warna: r.get('Warna') || 'blue',
+        TrendLogic: r.get('TrendLogic') || 'UpIsGood',
+        TargetRPJMD: r.get('TargetRPJMD') || ''
+    }));
+
+    return { meta: metaData, data: finalData };
+  } catch (error) { 
+      console.error("Error getting home data", error);
+      return { meta: [], data: [] }; 
+  }
 };
 
 export const getNavLinks = async () => {
@@ -103,7 +206,6 @@ export const getNavLinks = async () => {
     const categories = new Set<string>();
     rows.forEach(row => {
       const cat = row.get('Kategori');
-      // Only show categories that have at least one active variable
       if (cat && row.get('Status') === 'Aktif') {
         categories.add(cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase());
       }
@@ -120,7 +222,9 @@ export const updateKonfig = async (id: string, updates: {
   Deskripsi?: string, 
   TipeGrafik?: string, 
   Warna?: string, 
-  TrendLogic?: string 
+  TrendLogic?: string,
+  ShowOnHome?: string,
+  TargetRPJMD?: string
 }) => {
   const doc = await getDoc();
   const sheet = doc.sheetsByTitle['Konfig'];
@@ -134,6 +238,8 @@ export const updateKonfig = async (id: string, updates: {
     if (updates.TipeGrafik !== undefined) row.assign({ TipeGrafik: updates.TipeGrafik });
     if (updates.Warna !== undefined) row.assign({ Warna: updates.Warna });
     if (updates.TrendLogic !== undefined) row.assign({ TrendLogic: updates.TrendLogic });
+    if (updates.ShowOnHome !== undefined) row.assign({ ShowOnHome: updates.ShowOnHome });
+    if (updates.TargetRPJMD !== undefined) row.assign({ TargetRPJMD: updates.TargetRPJMD });
     
     await row.save();
   }

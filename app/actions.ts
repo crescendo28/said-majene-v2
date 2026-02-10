@@ -1,6 +1,6 @@
 'use server';
 
-import { updateKonfig, addKonfigRow } from '@/lib/googleSheets';
+import { updateKonfig, addKonfigRow, saveGlobalSetting } from '@/lib/googleSheets';
 import { revalidatePath } from 'next/cache';
 
 // --- CONFIG ACTIONS ---
@@ -15,14 +15,18 @@ export async function saveConfig(formData: FormData) {
   const chartType = formData.get('chartType') as string;
   const color = formData.get('color') as string;
   const trendLogic = formData.get('trendLogic') as string;
+  // Checkbox: if checked returns 'on', else null
+  const showOnHome = formData.get('showOnHome') === 'on' ? 'TRUE' : 'FALSE';
+  const targetRPJMD = formData.get('targetRPJMD') as string;
 
-  // Only add if they exist to avoid overwriting with nulls
   if (status) updates.Status = status;
   if (category) updates.Kategori = category;
   if (description !== null) updates.Deskripsi = description;
   if (chartType) updates.TipeGrafik = chartType;
   if (color) updates.Warna = color;
   if (trendLogic) updates.TrendLogic = trendLogic;
+  updates.ShowOnHome = showOnHome;
+  if (targetRPJMD !== null) updates.TargetRPJMD = targetRPJMD;
 
   await updateKonfig(id, updates);
   
@@ -48,7 +52,9 @@ export async function createIndicator(prevState: any, formData: FormData) {
     Deskripsi: formData.get('description') || '',
     TipeGrafik: formData.get('chartType') || 'line',
     Warna: formData.get('color') || 'blue',
-    TrendLogic: formData.get('trendLogic') || 'UpIsGood'
+    TrendLogic: formData.get('trendLogic') || 'UpIsGood',
+    ShowOnHome: 'FALSE',
+    TargetRPJMD: ''
   };
 
   await addKonfigRow(newData);
@@ -60,20 +66,16 @@ export async function createIndicator(prevState: any, formData: FormData) {
   return { success: true };
 }
 
-// --- SYNC ACTIONS (Placeholders to prevent build errors) ---
-// Since we don't have the full BPS sync logic in this context, 
-// these placeholders ensure your UI doesn't crash.
-
-export async function initSync() {
-  // In a real app, this would fetch the list of IDs to sync from BPS API
-  return { success: true, queue: [] };
+export async function updateSettings(formData: FormData) {
+    const pubLink = formData.get('publicationLink') as string;
+    if (pubLink !== null) {
+        await saveGlobalSetting('publication_link', pubLink);
+    }
+    revalidatePath('/');
+    revalidatePath('/admin');
 }
 
-export async function processSyncItem(id: string) {
-  // In a real app, this would fetch data for a single ID and update the 'Data' sheet
-  return { success: true };
-}
-
-export async function finishSync() {
-  revalidatePath('/dashboard/[slug]', 'page');
-}
+// --- SYNC ACTIONS (Placeholders) ---
+export async function initSync() { return { success: true, queue: [] }; }
+export async function processSyncItem(id: string) { return { success: true }; }
+export async function finishSync() { revalidatePath('/dashboard/[slug]', 'page'); }
