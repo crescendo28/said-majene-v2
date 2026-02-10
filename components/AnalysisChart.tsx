@@ -14,7 +14,7 @@ import {
   ChartOptions,
   ChartData
 } from 'chart.js';
-import { Line, Bar, Pie, Scatter } from 'react-chartjs-2';
+import { Line, Bar, Pie, Scatter, Chart } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -200,7 +200,15 @@ export function AnalysisChart({ type, data, xCol, yCol, label, tooltipCol, serie
         };
 
         // Use Bar component for mixed charts (it can render lines too if defined in datasets)
-        return <Bar data={mixedData} options={mixedOptions} />;
+        
+        return (
+        <Chart
+        type="bar"
+        data={mixedData as any}
+        options={mixedOptions as any}
+        />
+);
+
     }
 
     // --- STANDARD SINGLE SERIES CHARTS (Fallback/Legacy) ---

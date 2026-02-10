@@ -82,7 +82,7 @@ export default function AnalysisAdminPanel({ configs }: { configs: AnalysisConfi
     <div className="flex h-screen overflow-hidden bg-slate-100 font-sans text-slate-900">
       
       {/* SIDEBAR */}
-      <aside className="w-64 bg-slate-900 text-white hidden md:flex flex-col flex-shrink-0">
+      <aside className="w-64 bg-slate-900 text-white hidden md:flex flex-col shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-slate-800 font-bold tracking-wide text-emerald-400">
             SAID Majene
         </div>

@@ -20,7 +20,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="flex flex-col min-h-screen bg-slate-50">
           <Navbar />
-          <div className="flex-grow">
+          <div className="grow">
             {children}
           </div>
           {/* GLOBAL FOOTER */}

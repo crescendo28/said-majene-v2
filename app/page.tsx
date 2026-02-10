@@ -26,8 +26,8 @@ export default async function Home() {
       <section className="bg-slate-900 text-white relative overflow-hidden pt-32 pb-48 rounded-b-[40px] shadow-2xl shadow-slate-900/20">
         
         {/* Background Gradients */}
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80"></div>
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black opacity-80"></div>
+        <div className="absolute top-[-20%] right-[-10%] w-150 h-150 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
             
@@ -68,7 +68,7 @@ export default async function Home() {
                         if (!history || history.length === 0) return null;
                         
                         return (
-                            <div key={m.Id} className="w-full md:w-[calc(50%-16px)] min-w-[320px] max-w-[700px]">
+                            <div key={m.Id} className="w-full md:w-[calc(50%-16px)] min-w-[320px] max-w-175">
                                 <HomeIndicatorCard 
                                     meta={m}
                                     history={history}

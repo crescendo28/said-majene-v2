@@ -155,7 +155,7 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
     <div className="flex h-screen overflow-hidden bg-slate-100 font-sans text-slate-900">
       
       {/* SIDEBAR */}
-      <aside className="w-64 bg-slate-900 text-white hidden md:flex flex-col flex-shrink-0">
+      <aside className="w-64 bg-slate-900 text-white hidden md:flex flex-col shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-slate-800 font-bold tracking-wide text-emerald-400">SAID Majene</div>
         <div className="p-4 space-y-2">
             <div className="flex items-center gap-3 px-4 py-3 bg-slate-800 rounded-xl text-white font-medium">
@@ -287,8 +287,8 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
                                 <div><label className="block text-xs font-bold uppercase mb-1 text-slate-500">Label Tampilan</label><input name="label" value={formLabel} onChange={e=>setFormLabel(e.target.value)} className="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Label Indikator"/></div>
                                 <div><label className="block text-xs font-bold uppercase mb-1 text-slate-500">Kategori</label><input name="category" list="category-list" value={formCategory} onChange={e=>setFormCategory(e.target.value)} className="w-full border border-slate-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none capitalize" placeholder="Contoh: Ekonomi"/></div>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <div><label className="block text-xs font-bold uppercase mb-1 text-slate-500 flex items-center gap-1"><Filter size={12}/> Filter Kategori</label><input name="dataFilter" value={formDataFilter} onChange={e=>setFormDataFilter(e.target.value)} className="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500" placeholder="Contoh: !Total" title="Gunakan '!' di depan untuk EXCLUDE (misal: '!Total' untuk pie chart)"/><p className="text-[9px] text-slate-400 mt-1">Tips: Gunakan <b>!Nama</b> untuk exclude</p></div>
-                                    <div><label className="block text-xs font-bold uppercase mb-1 text-slate-500 flex items-center gap-1"><Calendar size={12}/> Filter Tahun</label><input name="filterTahun" value={formFilterTahun} onChange={e=>setFormFilterTahun(e.target.value)} className="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 2024" title="Filter baris data berdasarkan Tahun. Gunakan untuk Pie Chart."/></div>
+                                    <div><label className="block text-xs font-bold uppercase mb-1 text-slate-500 items-center gap-1"><Filter size={12}/> Filter Kategori</label><input name="dataFilter" value={formDataFilter} onChange={e=>setFormDataFilter(e.target.value)} className="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500" placeholder="Contoh: !Total" title="Gunakan '!' di depan untuk EXCLUDE (misal: '!Total' untuk pie chart)"/><p className="text-[9px] text-slate-400 mt-1">Tips: Gunakan <b>!Nama</b> untuk exclude</p></div>
+                                    <div><label className="block text-xs font-bold uppercase mb-1 text-slate-500 items-center gap-1"><Calendar size={12}/> Filter Tahun</label><input name="filterTahun" value={formFilterTahun} onChange={e=>setFormFilterTahun(e.target.value)} className="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500" placeholder="Contoh: 2024" title="Filter baris data berdasarkan Tahun. Gunakan untuk Pie Chart."/></div>
                                 </div>
                              </div>
 
@@ -308,7 +308,7 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
                              <h4 className="text-sm font-bold text-indigo-900 flex items-center gap-2 mb-4"><Home size={14}/> Pengaturan Beranda & RPJMD</h4>
                              <div className="grid grid-cols-2 gap-6">
                                 <label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" name="showOnHome" checked={formShowHome} onChange={e => setFormShowHome(e.target.checked)} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300"/><span className="text-sm font-bold text-indigo-900">Tampilkan di Beranda</span></label>
-                                <div><label className="block text-xs font-bold uppercase mb-1 text-indigo-800 flex items-center gap-1"><Target size={12}/> Target RPJMD</label><input name="targetRPJMD" value={formTargetRPJMD} onChange={e=>setFormTargetRPJMD(e.target.value)} className="w-full border border-indigo-200 p-2 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Contoh: 5.25%"/></div>
+                                <div><label className="block text-xs font-bold uppercase mb-1 text-indigo-800 items-center gap-1"><Target size={12}/> Target RPJMD</label><input name="targetRPJMD" value={formTargetRPJMD} onChange={e=>setFormTargetRPJMD(e.target.value)} className="w-full border border-indigo-200 p-2 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Contoh: 5.25%"/></div>
                              </div>
                         </div>
 

@@ -54,7 +54,7 @@ export default async function AnalysisDetailPage({params}: PageProps) {
        </div>
 
        <div className="max-w-5xl mx-auto px-6 -mt-20 relative z-20">
-            <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 p-8 md:p-12">
+            <div className="bg-white rounded-4xl shadow-sm border border-slate-100 p-8 md:p-12">
                 <div className="prose prose-lg prose-slate max-w-none text-slate-600 leading-relaxed mb-12 whitespace-pre-wrap">
                     {content.description}
                 </div>
@@ -65,7 +65,7 @@ export default async function AnalysisDetailPage({params}: PageProps) {
                             <Database size={18} className="text-emerald-500"/> {chart.title}
                         </h3>
                         
-                        <div className="h-[450px] w-full bg-white rounded-xl p-4 shadow-sm border border-slate-100">
+                        <div className="h-112.5 w-full bg-white rounded-xl p-4 shadow-sm border border-slate-100">
                             <AnalysisChart 
                                 type={chart.type} 
                                 data={chart.data} 
