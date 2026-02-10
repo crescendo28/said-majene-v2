@@ -18,19 +18,21 @@ export default function Navbar({ dynamicLinks }: { dynamicLinks: string[] }) {
   return (
     <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-6 sm:px-10 lg:px-12">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-16 gap-3">
 
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 min-w-0">
             <Image
               src="/logo.png"
               alt="SAID Majene Logo"
               width={45}
               height={45}
-              className="rounded-lg"
+              className="rounded-lg shrink-0"
             />
-            <span className="text-white font-bold text-m tracking-tight">
-              Sistem Analisis Isu Strategis Daerah
+            <span className="text-white font-bold text-sm sm:text-base tracking-tight">
+              <span className="sm:hidden">SAID</span>
+              <span className="hidden sm:inline">Sistem Analisis Isu Strategis Daerah</span>
             </span>
+
           </Link>
 
           <div className="flex items-center space-x-1 sm:space-x-4">
