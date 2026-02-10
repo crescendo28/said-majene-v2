@@ -13,11 +13,13 @@ import {
   Tooltip,
   Legend,
   Filler,
-  TooltipItem
+  TooltipItem,
+  ChartData,
+  ChartOptions
 } from 'chart.js';
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import { 
-  Download, Calendar, TrendingUp, TrendingDown, Minus, Info
+  Download, Calendar, TrendingUp, TrendingDown, Minus, Activity
 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler);
@@ -63,41 +65,60 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
     });
   };
 
+  const getPieData = (varId: string) => {
+      const varRows = dataByVar[varId] || [];
+      const items = varRows.filter(d => d.Tahun === focusYear);
+      
+      const labels = items.map(i => i.kategori_data || i.Kategori || i.variable_name);
+      const values = items.map(i => parseFloat(String(i.Nilai).replace(',', '.')));
+      
+      return { labels, values };
+  };
+
   const getFocusValue = (varId: string) => {
     const varRows = dataByVar[varId] || [];
-    const item = varRows.find(d => d.Tahun === focusYear);
-    if (!item) return { val: '-', unit: '' };
-    const val = parseFloat(String(item.Nilai).replace(',', '.'));
-    return { val: val.toLocaleString('id-ID', { maximumFractionDigits: 2 }), unit: item.Satuan };
+    const items = varRows.filter(d => d.Tahun === focusYear);
+    if (items.length === 0) return { val: '-', unit: '' };
+
+    // Try to find "Total" or similar, else take first
+    const totalItem = items.find(i => /total|jumlah/i.test(i.kategori_data || '')) || items[0];
+    
+    const val = parseFloat(String(totalItem.Nilai).replace(',', '.'));
+    return { val: val.toLocaleString('id-ID', { maximumFractionDigits: 2 }), unit: totalItem.Satuan };
   };
 
   const getTrend = (varId: string, trendLogic: string = 'UpIsGood') => {
     const varRows = dataByVar[varId] || [];
-    const currItem = varRows.find(d => d.Tahun === focusYear);
-    // Find previous available year relative to focusYear
+    
+    const getRep = (y: string) => {
+        const items = varRows.filter(d => d.Tahun === y);
+        return items.find(i => /total|jumlah/i.test(i.kategori_data || '')) || items[0];
+    };
+
+    const currItem = getRep(focusYear);
     const prevYearIndex = allYears.indexOf(focusYear) - 1;
     const prevYear = prevYearIndex >= 0 ? allYears[prevYearIndex] : null;
-    const prevItem = prevYear ? varRows.find(d => d.Tahun === prevYear) : null;
+    const prevItem = prevYear ? getRep(prevYear) : null;
 
-    if (!currItem || !prevItem) return { diff: '0.0%', dir: 'flat', color: 'bg-slate-100 text-slate-500' };
+    if (!currItem || !prevItem) return { diff: '0.0%', dir: 'flat', color: 'bg-slate-100 text-slate-500', text: 'Stagnan' };
 
     const curr = parseFloat(String(currItem.Nilai).replace(',', '.'));
     const prev = parseFloat(String(prevItem.Nilai).replace(',', '.'));
     
-    if (prev === 0) return { diff: 'N/A', dir: 'flat', color: 'bg-slate-100 text-slate-500' };
+    if (prev === 0) return { diff: 'N/A', dir: 'flat', color: 'bg-slate-100 text-slate-500', text: 'N/A' };
 
-    const diff = ((curr - prev) / prev) * 100; // Percentage change
+    const diff = ((curr - prev) / prev) * 100;
     const absDiff = Math.abs(diff).toFixed(1) + '%';
 
     let color = 'bg-slate-100 text-slate-500';
-    // Logic for UpIsGood (Green Up, Red Down) vs DownIsGood (Green Down, Red Up)
     if (diff > 0) color = trendLogic === 'UpIsGood' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
     if (diff < 0) color = trendLogic === 'DownIsGood' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700';
 
     return { 
         diff: absDiff, 
         dir: diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat', 
-        color 
+        color,
+        text: diff > 0 ? 'Naik' : diff < 0 ? 'Turun' : 'Tetap'
     };
   };
 
@@ -121,7 +142,9 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
 
   // --- UI RENDER ---
 
-  const getChartOptions = (unit: string) => ({
+  // Helper to create options - we return 'any' or a broad type, then cast at usage site
+  // This approach is much cleaner for the compiler than complex generics here.
+  const createChartOptions = (unit: string) => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: { 
@@ -137,11 +160,9 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
             borderWidth: 1,
             padding: 10,
             callbacks: {
-                label: function(context: TooltipItem<"line" | "bar" | "pie" | "doughnut">) {
+                label: function(context: any) {
                     let label = context.dataset.label || '';
-                    if (label) {
-                        label += ': ';
-                    }
+                    if (label) label += ': ';
                     if (context.parsed.y !== null) {
                         label += new Intl.NumberFormat('id-ID').format(context.parsed.y) + ' ' + unit;
                     }
@@ -151,24 +172,29 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
         } 
     },
     scales: {
-      x: { display: false }, 
-      y: { display: false } // Sparkline look
+      x: { 
+        display: true, 
+        grid: { display: false },
+        ticks: { font: { size: 11 }, color: '#94a3b8' }
+      }, 
+      y: { 
+        display: true, 
+        position: 'right' as const,
+        grid: { color: '#f1f5f9' },
+        ticks: { font: { size: 10 }, color: '#cbd5e1', count: 3 }
+      }
     },
-    elements: {
-        point: { radius: 0, hitRadius: 10, hoverRadius: 4 },
-        line: { tension: 0.4, borderWidth: 3 }
-    },
-    layout: { padding: 0 }
+    layout: { padding: 10 }
   });
 
-  const getPieOptions = (unit: string) => ({
+  const createPieOptions = (unit: string) => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-        legend: { display: true, position: 'right' as const, labels: { boxWidth: 10, font: { size: 10 } } },
+        legend: { display: true, position: 'right' as const, labels: { boxWidth: 10, font: { size: 11 } } },
         tooltip: {
             callbacks: {
-                label: function(context: TooltipItem<"pie" | "doughnut">) {
+                label: function(context: any) {
                     const val = context.parsed;
                     return new Intl.NumberFormat('id-ID').format(val) + ' ' + unit;
                 }
@@ -233,13 +259,13 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
       </div>
 
       {/* Main Content Grid */}
-      <div className="max-w-7xl mx-auto px-6 py-8 flex-grow w-full">
+      <div className="max-w-7xl mx-auto px-6 py-8 grow w-full">
         {safeMeta.length === 0 ? (
             <div className="text-center py-20">
                 <p className="text-slate-400">Tidak ada indikator yang ditemukan untuk kategori ini.</p>
             </div>
         ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             
             {safeMeta.map((variable, i) => {
                 const id = variable.Id;
@@ -252,87 +278,139 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
                 const { val, unit } = getFocusValue(id);
                 const trend = getTrend(id, trendLogic);
                 const hexColor = getColorHex(themeColor);
-                const bg = `${hexColor}1A`; // 10% opacity
+                
+                // Chart Data Construction
+                let chartElement = null;
 
-                // Prepare Chart Data
-                const seriesData = getSeriesData(id);
-                const chartData = {
-                    labels: filteredYears,
-                    datasets: [{
-                        label: label,
-                        data: seriesData,
-                        borderColor: hexColor,
-                        backgroundColor: chartType === 'line' ? bg : [
-                             // Generate palette for Pie/Doughnut if needed
-                             '#3b82f6', '#10b981', '#f43f5e', '#f97316', '#8b5cf6'
-                        ],
-                        fill: true,
-                        borderRadius: 2,
-                        hoverBackgroundColor: hexColor, // Solid on hover
-                    }]
-                };
+                if (chartType === 'line') {
+                    const data = {
+                        labels: filteredYears,
+                        datasets: [{
+                            label: label,
+                            data: getSeriesData(id),
+                            borderColor: hexColor,
+                            backgroundColor: `${hexColor}1A`,
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 3,
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            hoverBackgroundColor: hexColor
+                        }]
+                    };
+                    const options = createChartOptions(unit);
+                    chartElement = <Line id={`chart-${id}`} data={data as ChartData<'line'>} options={options as ChartOptions<'line'>} />;
+                } 
+                else if (chartType === 'bar') {
+                    const data = {
+                        labels: filteredYears,
+                        datasets: [{
+                            label: label,
+                            data: getSeriesData(id),
+                            backgroundColor: hexColor,
+                            borderRadius: 4,
+                            borderWidth: 0,
+                            hoverBackgroundColor: hexColor
+                        }]
+                    };
+                    const options = createChartOptions(unit);
+                    chartElement = <Bar id={`chart-${id}`} data={data as ChartData<'bar'>} options={options as ChartOptions<'bar'>} />;
+                } 
+                else if (chartType === 'doughnut') {
+                    const { labels, values } = getPieData(id);
+                    const data = {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [
+                                '#3b82f6', '#10b981', '#f43f5e', '#f97316', '#8b5cf6', 
+                                '#06b6d4', '#84cc16', '#d946ef', '#64748b'
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    };
+                    const options = createPieOptions(unit);
+                    chartElement = <Doughnut id={`chart-${id}`} data={data as ChartData<'doughnut'>} options={options as ChartOptions<'doughnut'>} />;
+                } 
+                else if (chartType === 'pie') {
+                    const { labels, values } = getPieData(id);
+                    const data = {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [
+                                '#3b82f6', '#10b981', '#f43f5e', '#f97316', '#8b5cf6', 
+                                '#06b6d4', '#84cc16', '#d946ef', '#64748b'
+                            ],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    };
+                    const options = createPieOptions(unit);
+                    chartElement = <Pie id={`chart-${id}`} data={data as ChartData<'pie'>} options={options as ChartOptions<'pie'>} />;
+                }
 
                 return (
-                    <div key={id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300 flex flex-col group">
+                    <div key={id} className="bg-white rounded-[20px] border border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 p-7 flex flex-col group h-full">
                         
-                        {/* Header (Value) */}
-                        <div className="p-6 border-b border-slate-50 flex-grow">
-                            <div className="flex justify-between items-start mb-2">
-                                <h3 className="text-sm font-bold text-slate-600 uppercase tracking-tight line-clamp-2 min-h-[2.5rem]" title={label}>
+                        {/* 1. Variable Name + Growth */}
+                        <div className="flex justify-between items-start mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-${themeColor}-50 text-${themeColor}-600`}>
+                                    <Activity size={20} />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800 leading-tight pr-4">
                                     {label}
                                 </h3>
-                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold flex-shrink-0 ${trend.color}`}>
-                                    {trend.dir === 'up' && <TrendingUp size={12}/>}
-                                    {trend.dir === 'down' && <TrendingDown size={12}/>}
-                                    {trend.dir === 'flat' && <Minus size={12}/>}
-                                    {trend.diff}
-                                </span>
-                            </div>
-                            <div className="flex items-end justify-between mt-2">
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-4xl font-black text-slate-900 tracking-tight">{val}</span>
-                                    <span className="text-xs text-slate-400 font-bold">{unit}</span>
-                                </div>
-                                <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md mb-1">
-                                    Data: {focusYear}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Chart Body */}
-                        <div className="p-4 bg-slate-50/50 relative">
-                            <div className="flex justify-between items-center mb-3">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                                    Tren {startYear}-{endYear}
-                                </span>
-                                <button 
-                                    onClick={() => downloadChart(`chart-${id}`, label)} 
-                                    className="text-slate-400 hover:text-indigo-600 transition opacity-0 group-hover:opacity-100"
-                                    title="Download Chart"
-                                >
-                                    <Download size={14} />
-                                </button>
                             </div>
                             
-                            <div className="h-32 w-full">
-                                {chartType === 'line' && <Line id={`chart-${id}`} data={chartData} options={getChartOptions(unit)} />}
-                                {chartType === 'bar' && <Bar id={`chart-${id}`} data={chartData} options={getChartOptions(unit)} />}
-                                {chartType === 'doughnut' && <Doughnut id={`chart-${id}`} data={chartData} options={getPieOptions(unit)} />}
-                                {chartType === 'pie' && <Pie id={`chart-${id}`} data={chartData} options={getPieOptions(unit)} />}
-                            </div>
-
-                            {/* Description Section */}
-                            {desc && (
-                                <div className="mt-4 pt-3 border-t border-slate-200/50">
-                                    <div className="flex items-start gap-2">
-                                        <Info className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                                        <p className="text-[10px] leading-relaxed text-slate-500 line-clamp-2 hover:line-clamp-none transition-all cursor-help" title={desc}>
-                                            {desc}
-                                        </p>
+                            {trend.diff !== 'N/A' && (
+                                <div className={`flex flex-col items-end shrink-0 ${trend.color} px-3 py-1.5 rounded-lg`}>
+                                    <div className="flex items-center gap-1 text-xs font-bold">
+                                        {trend.dir === 'up' && <TrendingUp size={14}/>}
+                                        {trend.dir === 'down' && <TrendingDown size={14}/>}
+                                        {trend.dir === 'flat' && <Minus size={14}/>}
+                                        <span>{trend.text} {trend.diff}</span>
                                     </div>
                                 </div>
                             )}
                         </div>
+
+                        {/* 2. Current Number + Year */}
+                        <div className="flex items-end gap-3 mb-6 pb-6 border-b border-slate-100">
+                            <span className="text-5xl font-black text-slate-900 tracking-tight leading-none">
+                                {val}
+                            </span>
+                            <div className="flex flex-col mb-1">
+                                <span className="text-sm font-bold text-slate-500">{unit}</span>
+                                <span className="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-full w-fit">
+                                    Tahun {focusYear}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 3. Description */}
+                        {desc && (
+                            <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                                {desc}
+                            </p>
+                        )}
+
+                        {/* 4. Chart */}
+                        <div className="mt-auto h-64 w-full relative flex items-center justify-center">
+                            <div className="absolute top-0 right-0 z-10">
+                                <button 
+                                    onClick={() => downloadChart(`chart-${id}`, label)} 
+                                    className="text-slate-400 hover:text-indigo-600 transition p-1 bg-white/80 rounded-full"
+                                    title="Download Chart"
+                                >
+                                    <Download size={16} />
+                                </button>
+                            </div>
+                            {chartElement}
+                        </div>
+
                     </div>
                 );
             })}

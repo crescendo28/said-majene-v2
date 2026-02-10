@@ -31,15 +31,15 @@ export default async function Home() {
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
             
-            <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-2">
-                Analisis Isu Terkini
-            </h1>
-            <h2 className="text-3xl md:text-5xl font-black text-emerald-400 tracking-tight mb-8">
+            <h6 className="text-2xl md:text-5xl font-black tracking-tight mb-2">
+                Sistem Analisis Isu Strategis Daerah
+            </h6>
+            <h4 className="text-3xl md:text-5xl font-black text-emerald-400 tracking-tight mb-8">
                 Kabupaten Majene
-            </h2>
+            </h4>
             
-            <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto mb-10">
-               Platform integrasi data strategis untuk memantau indikator Ekonomi dan Sosial secara real-time.
+            <p className="text-lg text-slate-400 leading-relaxed max-w-4xl mx-auto mb-10">
+               Kajian isu strategis daerah Kabupaten Majene edisi ini berfokus pada dua pilar utama: analisis kemiskinan untuk memahami tingkat kesejahteraan masyarakat, dan analisis daya saing ekonomi untuk memetakan kekuatan serta potensi sektoral daerah.
             </p>
             
             <div className="flex justify-center gap-4">
@@ -86,11 +86,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer className="bg-white border-t border-slate-200 py-12">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-            <p className="text-sm text-slate-500 font-medium">© 2025 BPS Kabupaten Majene. Developed by IPDS.</p>
-        </div>
-      </footer>
+      
     </main>
   );
 }

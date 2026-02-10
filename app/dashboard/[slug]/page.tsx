@@ -11,10 +11,11 @@ export default async function Page(props: PageProps) {
   const params = await props.params;
   const { slug } = params;
   
+  // Fetch data - getDashboardData handles decoding internally now too
   const { meta, data } = await getDashboardData(slug);
   
   // Clean up title for display
-  const title = slug.charAt(0).toUpperCase() + slug.slice(1);
+  const title = decodeURIComponent(slug).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   if (meta.length === 0) {
     return (
@@ -26,7 +27,7 @@ export default async function Page(props: PageProps) {
             Silakan login ke 
             <span className="text-emerald-600 font-mono bg-emerald-50 px-2 py-1 rounded mx-1">/admin</span> 
             untuk menambahkan indikator baru ke kategori 
-            <span className="text-emerald-600 font-mono bg-emerald-50 px-2 py-1 rounded mx-1">"{slug}"</span>.
+            <span className="text-emerald-600 font-mono bg-emerald-50 px-2 py-1 rounded mx-1">"{decodeURIComponent(slug)}"</span>.
           </p>
         </div>
       </div>
@@ -35,7 +36,7 @@ export default async function Page(props: PageProps) {
 
   return (
     <GenericDashboard 
-      category={slug} 
+      category={title} 
       data={data} 
       meta={meta} 
     />

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getNavLinks } from '@/lib/googleSheets';
 import { LayoutDashboard, Settings, Home, LineChart, ChevronDown } from 'lucide-react';
+import Image from "next/image";
 
 export default async function Navbar() {
   // Fetch categories from Google Sheets
@@ -9,14 +10,13 @@ export default async function Navbar() {
 
   return (
     <nav className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-6 sm:px-10 lg:px-12">
         <div className="flex items-center justify-between h-16">
           
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
-              M
-            </div>
-            <span className="text-white font-bold text-xl tracking-tight">SAID Majene</span>
+            <Image src="/logo.png" alt="SAID Majene Logo" width={45} height={45} className="rounded-lg"
+            />
+            <span className="text-white font-bold text-m tracking-tight">Sistem Analisis Isu Strategis Daerah</span>
           </Link>
           
           <div className="flex items-center space-x-1 sm:space-x-4">
