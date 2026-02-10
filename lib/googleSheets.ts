@@ -1,4 +1,3 @@
-// ... (Imports & Auth same as before) ...
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 
@@ -27,6 +26,29 @@ export const getSheetData = async (sheetName: string) => {
     const rows = await sheet.getRows();
     return rows.map((row) => row.toObject());
   } catch (error) { return []; }
+};
+
+// Used by Admin Panel to see EVERYTHING
+export const getAllVariables = async () => {
+  try {
+    const doc = await getDoc();
+    const sheet = doc.sheetsByTitle['Konfig'];
+    if (!sheet) return [];
+    const rows = await sheet.getRows();
+    return rows.map(row => ({
+      Id: row.get('Id'),
+      Label: row.get('Label'),
+      Kategori: row.get('Kategori') || 'Uncategorized',
+      Status: row.get('Status') || 'Non-Aktif',
+      Deskripsi: row.get('Deskripsi') || '',
+      TipeGrafik: row.get('TipeGrafik') || 'line',
+      Warna: row.get('Warna') || 'blue',
+      TrendLogic: row.get('TrendLogic') || 'UpIsGood'
+    }));
+  } catch (error) { 
+    console.error("Error fetching variables:", error);
+    return []; 
+  }
 };
 
 export const getDashboardData = async (slug: string) => {
@@ -81,7 +103,10 @@ export const getNavLinks = async () => {
     const categories = new Set<string>();
     rows.forEach(row => {
       const cat = row.get('Kategori');
-      if (cat && row.get('Status') === 'Aktif') categories.add(cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase());
+      // Only show categories that have at least one active variable
+      if (cat && row.get('Status') === 'Aktif') {
+        categories.add(cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase());
+      }
     });
     return Array.from(categories).sort();
   } catch (error) { return []; }
@@ -89,19 +114,27 @@ export const getNavLinks = async () => {
 
 // --- WRITE FUNCTIONS ---
 
-export const updateKonfig = async (id: string, newStatus: string, newCategory: string, newDesc?: string, newChartType?: string, newColor?: string, newTrend?: string) => {
+export const updateKonfig = async (id: string, updates: { 
+  Status?: string, 
+  Kategori?: string, 
+  Deskripsi?: string, 
+  TipeGrafik?: string, 
+  Warna?: string, 
+  TrendLogic?: string 
+}) => {
   const doc = await getDoc();
   const sheet = doc.sheetsByTitle['Konfig'];
   const rows = await sheet.getRows();
   const row = rows.find(r => r.get('Id') === id);
+  
   if (row) {
-    const updates: any = { Status: newStatus, Kategori: newCategory };
-    if (newDesc !== undefined) updates.Deskripsi = newDesc;
-    if (newChartType !== undefined) updates.TipeGrafik = newChartType;
-    if (newColor !== undefined) updates.Warna = newColor;
-    if (newTrend !== undefined) updates.TrendLogic = newTrend;
+    if (updates.Status !== undefined) row.assign({ Status: updates.Status });
+    if (updates.Kategori !== undefined) row.assign({ Kategori: updates.Kategori });
+    if (updates.Deskripsi !== undefined) row.assign({ Deskripsi: updates.Deskripsi });
+    if (updates.TipeGrafik !== undefined) row.assign({ TipeGrafik: updates.TipeGrafik });
+    if (updates.Warna !== undefined) row.assign({ Warna: updates.Warna });
+    if (updates.TrendLogic !== undefined) row.assign({ TrendLogic: updates.TrendLogic });
     
-    row.assign(updates);
     await row.save();
   }
 };
@@ -109,23 +142,7 @@ export const updateKonfig = async (id: string, newStatus: string, newCategory: s
 export const addKonfigRow = async (newData: any) => {
     const doc = await getDoc();
     const sheet = doc.sheetsByTitle['Konfig'];
-    await sheet.addRow(newData);
-};
-
-export const clearDataSheet = async () => {
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Data'];
     if (sheet) {
-        const rows = await sheet.getRows();
-        if(rows.length > 0) {
-            await sheet.clear(); 
-            await sheet.setHeaderRow(['id_domain', 'kategori', 'Tahun', 'Periode', 'Pilih Tahun', 'id_variable', 'Nama Variabel', 'Nilai', 'Satuan']);
-        }
+        await sheet.addRow(newData);
     }
-};
-
-export const appendDataRows = async (rows: any[]) => {
-    const doc = await getDoc();
-    const sheet = doc.sheetsByTitle['Data'];
-    if (sheet && rows.length > 0) await sheet.addRows(rows);
 };

@@ -1,18 +1,19 @@
-import { getSheetData } from '@/lib/googleSheets';
+import { getAllVariables } from '@/lib/googleSheets';
 import AdminPanel from '@/components/AdminPanel';
 
-export const revalidate = 0; // Ensure admin always sees fresh data
+export const revalidate = 0; // Always dynamic for admin panel
 
 export default async function AdminPage() {
-  // Fetch Config (Existing active indicators)
-  const konfigData = await getSheetData('Konfig');
+  // Fetch config data from Google Sheets
+  const variables = await getAllVariables();
   
-  // Fetch Metadata (Available indicators from API/Source)
-  const metadata = await getSheetData('Metadata');
+  // In a real scenario, you might fetch metadata from BPS here.
+  // For now, we pass an empty array to prevent errors.
+  const metadata: any[] = []; 
 
   return (
-    <main>
-        <AdminPanel konfigData={konfigData} metadata={metadata} />
-    </main>
+    <div className="min-h-screen bg-slate-100">
+        <AdminPanel konfigData={variables || []} metadata={metadata} />
+    </div>
   );
 }
