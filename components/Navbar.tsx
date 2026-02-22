@@ -29,7 +29,7 @@ export default function Navbar({ dynamicLinks }: { dynamicLinks: string[] }) {
               className="rounded-lg shrink-0"
             />
             <span className="text-white font-bold text-sm sm:text-base tracking-tight">
-              <span className="sm:hidden">SAID</span>
+              <span className="sm:hidden"> </span>
               <span className="hidden sm:inline">Sistem Analisis Isu Strategis Daerah</span>
             </span>
 
