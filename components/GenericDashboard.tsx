@@ -420,7 +420,7 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
 
       {/* Footer */}
       <footer className="mt-auto py-8 border-t border-slate-200 bg-slate-50 text-center">
-        <p className="text-xs text-slate-400">© 2025 BPS Kabupaten Majene. Sumber Data: BPS Web API.</p>
+        <p className="text-xs text-slate-400">Sumber Data: BPS Web API</p>
       </footer>
     </div>
   );
