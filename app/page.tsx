@@ -15,18 +15,16 @@ export default async function Home() {
   const { meta, data } = homeDataResult;
   const publicationLink = settings['publication_link'] || '#';
 
-  // Helper to get historical data, sorted, and limited to the LAST 5 YEARS
   const getVariableHistory = (varId: string) => {
     return data
         .filter((d: any) => String(d.id_variable) === String(varId))
         .sort((a: any, b: any) => Number(a.Tahun) - Number(b.Tahun))
-        .slice(-5); // <--- THIS is the slight change! Only grabs the last 5 years
+        .slice(-5); 
   };
 
-  // Get active analyses for the preview grid
   const activeAnalyses = (analysisConfigs || [])
     .filter((c: any) => c.Status === 'Aktif')
-    .slice(0, 3); // Take top 3 for preview
+    .slice(0, 3); 
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] text-slate-900 font-sans pb-20">
