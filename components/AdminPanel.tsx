@@ -3,9 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { saveConfig, createIndicator, initSync, processSyncItem, finishSync, updateSettings } from '@/app/actions';
 import { 
-  Search, Plus, RefreshCw, Loader2, Pencil, 
+  saveConfig, 
+  createIndicator, 
+  deleteIndicatorAction, // Added this import
+  initSync, 
+  processSyncItem, 
+  finishSync, 
+  updateSettings 
+} from '@/app/actions';
+import { 
+  Search, Plus, RefreshCw, Loader2, Pencil, Trash2, // Added Trash2
   BarChart2, Palette, TrendingUp, LayoutDashboard,
   Home, Target, Globe, FileText, List, Filter, Calendar,
   ArrowRightCircle, FileBarChart, LogOut
@@ -29,6 +37,7 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
   const [statusText, setStatusText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null); // Added deleting state
   const [formId, setFormId] = useState('');
   const [formLabel, setFormLabel] = useState('');
   const [formCategory, setFormCategory] = useState('');
@@ -126,6 +135,25 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
           if (res.success) { await finishSync(); alert(`Data untuk ${id} berhasil diperbarui.`); } else { alert(`Gagal memperbarui data: ${res.error}`); }
       } catch (e) { console.error(e); alert("Terjadi kesalahan jaringan."); }
       setSyncingId(null);
+  };
+
+  // --- NEW DELETE FUNCTION ---
+  const handleDelete = async (id: string, label: string) => {
+      if(!confirm(`⚠️ PERINGATAN!\n\nApakah Anda yakin ingin menghapus indikator "${label}" (${id})?\n\nIndikator ini akan dihapus dari sistem.`)) return;
+      
+      setDeletingId(id);
+      try {
+          const res = await deleteIndicatorAction(id);
+          if (res.success) { 
+              // Using a subtle toast/alert here is good
+          } else { 
+              alert(`Gagal menghapus data: ${res.error}`); 
+          }
+      } catch (e) { 
+          console.error(e); 
+          alert("Terjadi kesalahan jaringan."); 
+      }
+      setDeletingId(null);
   };
 
   const startFullSync = async () => {
@@ -246,6 +274,12 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
                                         <div className="flex justify-end gap-2">
                                             <button onClick={() => handleSingleSync(row.Id)} disabled={syncingId === row.Id} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition-colors disabled:opacity-50" title="Sync Data dari BPS">{syncingId === row.Id ? <Loader2 size={16} className="animate-spin"/> : <RefreshCw size={16} />}</button>
                                             <button onClick={() => openEditModal(row)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" title="Edit Konfigurasi"><Pencil size={16} /></button>
+                                            
+                                            {/* DELETE BUTTON ADDED HERE */}
+                                            <button onClick={() => handleDelete(row.Id, row.Label)} disabled={deletingId === row.Id} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 hover:text-rose-700 transition-colors disabled:opacity-50" title="Hapus Indikator">
+                                              {deletingId === row.Id ? <Loader2 size={16} className="animate-spin"/> : <Trash2 size={16} />}
+                                            </button>
+
                                         </div>
                                     </td>
                                 </tr>

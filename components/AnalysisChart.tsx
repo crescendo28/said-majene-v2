@@ -11,236 +11,162 @@ import {
   Title,
   Tooltip,
   Legend,
-  ChartOptions,
-  ChartData
+  Filler,
 } from 'chart.js';
-import { Line, Bar, Pie, Scatter, Chart } from 'react-chartjs-2';
+import { Line, Bar, Doughnut, Pie, Scatter } from 'react-chartjs-2';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend);
-
-interface ChartSeries {
-    name: string;
-    key: string;
-    type?: 'line' | 'bar';
-    color: string;
-    yAxisID?: string;
-}
-
-interface Props {
-    type: string;
-    data: any[];
-    xCol?: string; 
-    yCol?: string; 
-    label?: string;
-    tooltipCol?: string;
-    series?: ChartSeries[];
-    yAxisLabel2?: string; 
-}
-
-const getValue = (row: any, key: string) => {
-    if (!key) return null;
-    const exact = row[key];
-    if (exact !== undefined) return exact;
-    const lowerKey = key.toLowerCase().trim();
-    const foundKey = Object.keys(row).find(k => k.toLowerCase().trim() === lowerKey);
-    return foundKey ? row[foundKey] : null;
-};
-
-// Quadrant Plugin for Scatter
-const quadrantPlugin = {
-  id: 'quadrants',
-  beforeDraw(chart: any) {
-    const { ctx, chartArea: { left, top, right, bottom }, scales: { x, y } } = chart;
-    const x0 = x.getPixelForValue(0);
-    const y0 = y.getPixelForValue(0);
-
-    ctx.save();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(100, 116, 139, 0.4)'; 
-    ctx.setLineDash([5, 5]); 
-
-    if (y0 >= top && y0 <= bottom) {
-        ctx.beginPath();
-        ctx.moveTo(left, y0);
-        ctx.lineTo(right, y0);
-        ctx.stroke();
-    }
-
-    if (x0 >= left && x0 <= right) {
-        ctx.beginPath();
-        ctx.moveTo(x0, top);
-        ctx.lineTo(x0, bottom);
-        ctx.stroke();
-    }
-    ctx.restore();
-  }
-};
-
-export function AnalysisChart({ type, data, xCol, yCol, label, tooltipCol, series, yAxisLabel2 }: Props) {
-    if (!data || data.length === 0) return <div className="h-full flex items-center justify-center text-slate-400 font-medium bg-slate-50 rounded-xl">Data tidak tersedia</div>;
-
-    // --- SCATTER PLOT SPECIAL LOGIC ---
-    if (type === 'scatter') {
-        const scatterDataPoints = data.map((row, i) => {
-            const rawX = getValue(row, xCol || 'x');
-            const rawY = getValue(row, yCol || 'y');
-            const x = typeof rawX === 'string' ? parseFloat(rawX.replace(',', '.')) : Number(rawX);
-            const y = typeof rawY === 'string' ? parseFloat(rawY.replace(',', '.')) : Number(rawY);
-            
-            return {
-                x,
-                y,
-                // Use tooltipCol if provided, otherwise fallback to label/name
-                label: tooltipCol ? getValue(row, tooltipCol) : (row.label || `Point ${i + 1}`)
-            };
-        });
-
-        const backgroundColors = scatterDataPoints.map((_, i) => `hsl(${(i * 137.5) % 360}, 70%, 50%)`);
-
-        const scatterData = {
-            datasets: [{
-                label: label || 'Scatter Data',
-                data: scatterDataPoints,
-                backgroundColor: backgroundColors,
-                pointRadius: 6,
-                pointHoverRadius: 8
-            }]
-        };
-
-        const scatterOptions: any = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                    padding: 12,
-                    cornerRadius: 8,
-                    displayColors: false,
-                    callbacks: {
-                        label: (context: any) => context.raw.label,
-                        afterLabel: (context: any) => `(${context.raw.x}, ${context.raw.y})`
-                    }
-                }
-            },
-            scales: {
-                x: { grid: { display: false }, title: { display: true, text: xCol || 'X', font: { size: 10, weight: 'bold' } } },
-                y: { grid: { display: false }, title: { display: true, text: yCol || 'Y', font: { size: 10, weight: 'bold' } } }
-            }
-        };
-
-        return <Scatter data={scatterData} options={scatterOptions} plugins={[quadrantPlugin]} />;
-    }
-
-    // --- MIXED / MULTI-LINE CHARTS ---
-    if (type === 'mixed' || type === 'multi-line') {
-        const labels = data.map(row => row.label || getValue(row, xCol || 'label'));
-        
-        const datasets = series?.map((s) => ({
-            type: s.type || 'line',
-            label: s.name,
-            data: data.map(row => {
-                const val = getValue(row, s.key);
-                return typeof val === 'string' ? parseFloat(val.replace(',', '.')) : Number(val);
-            }),
-            borderColor: s.color,
-            backgroundColor: s.type === 'bar' ? s.color : undefined, // Fill color for bar
-            borderWidth: 2,
-            pointRadius: 4,
-            yAxisID: s.yAxisID || 'y',
-            order: s.type === 'bar' ? 2 : 1 // Lines on top
-        })) || [];
-
-        const mixedData = { labels, datasets };
-
-        // Determine if we need the secondary axis
-        const useSecondaryAxis = yAxisLabel2 || series?.some(s => s.yAxisID === 'y1');
-
-        // Define scales carefully. Chart.js 3+ allows any key in 'scales'.
-        const scalesConfig: any = {
-            x: { 
-                type: 'category', // Explicitly set category for X axis
-                grid: { display: false } 
-            },
-            y: { 
-                type: 'linear', 
-                display: true, 
-                position: 'left',
-                grid: { color: '#f1f5f9' },
-                title: { display: true, text: 'Jumlah / Nilai' }
-            }
-        };
-
-        // Only add y1 if needed
-        if (useSecondaryAxis) {
-            scalesConfig.y1 = {
-                type: 'linear',
-                display: true,
-                position: 'right',
-                grid: { drawOnChartArea: false }, // only want the grid lines for one axis to show up
-                title: { display: true, text: yAxisLabel2 || '' }
-            };
-        }
-
-        const mixedOptions: any = {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                legend: { position: 'bottom' },
-                tooltip: { 
-                    mode: 'index', 
-                    intersect: false 
-                }
-            },
-            scales: scalesConfig
-        };
-
-        // Use Bar component for mixed charts (it can render lines too if defined in datasets)
-        
-        return (
-        <Chart
-        type="bar"
-        data={mixedData as any}
-        options={mixedOptions as any}
-        />
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
 );
 
-    }
+// Helper function to safely parse numbers, converting Indonesian comma decimals (1,81) to dots (1.81)
+const parseNumber = (val: any) => {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  // Replace comma with dot and parse
+  const parsed = parseFloat(String(val).replace(/,/g, '.'));
+  return isNaN(parsed) ? 0 : parsed;
+};
 
-    // --- STANDARD SINGLE SERIES CHARTS (Fallback/Legacy) ---
-    const labels = data.map(row => row.label || getValue(row, xCol || 'label'));
-    const values = data.map(row => {
-         const val = getValue(row, yCol || 'value');
-         return typeof val === 'string' ? parseFloat(val.replace(',', '.')) : Number(val);
-    });
+export default function AnalysisChart({ data, config }: { data: any[], config: any }) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-75 text-slate-400 font-medium">
+        Data belum tersedia / kosong di Spreadsheet.
+      </div>
+    );
+  }
 
-    const chartData = {
-        labels,
-        datasets: [{
-            label: label || 'Data',
-            data: values,
-            borderColor: '#3b82f6',
-            backgroundColor: type === 'bar' ? '#3b82f6' : 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 2,
-            tension: 0.3,
-            fill: type === 'line'
-        }]
+  // Identify columns to use
+  const isScatter = config.ChartType === 'scatter';
+  const xCol = config.XAxisCol || Object.keys(data[0])[0];
+  const yCol = config.YAxisCol || Object.keys(data[0])[1];
+  
+  // Assume the first column is the label/name of the item (e.g., "A. Pertanian...")
+  const labelCol = Object.keys(data[0])[0]; 
+
+  let chartData: any;
+
+  if (isScatter) {
+    // Scatter charts require data in {x, y} format
+    chartData = {
+      datasets: [
+        {
+          label: config.Title || 'Data',
+          data: data.map((row) => ({
+            x: parseNumber(row[xCol]),
+            y: parseNumber(row[yCol]),
+            itemName: row[labelCol] || 'Unknown', // Store original name for the tooltip
+          })),
+          backgroundColor: 'rgba(59, 130, 246, 0.7)',
+          borderColor: 'rgba(29, 78, 216, 1)',
+          pointRadius: 6,
+          pointHoverRadius: 9,
+          borderWidth: 1,
+        },
+      ],
     };
-    
-    const options: any = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-             x: { grid: { display: false } },
-             y: { grid: { color: '#f1f5f9' } }
-        }
+  } else {
+    // Line, Bar, Pie, Doughnut use standard array format
+    chartData = {
+      labels: data.map((row) => row[xCol] || 'N/A'),
+      datasets: [
+        {
+          label: config.Title || yCol,
+          data: data.map((row) => parseNumber(row[yCol])),
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.8)',
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(239, 68, 68, 0.8)',
+            'rgba(139, 92, 246, 0.8)',
+          ],
+          borderColor: [
+            'rgba(29, 78, 216, 1)',
+            'rgba(4, 120, 87, 1)',
+            'rgba(180, 83, 9, 1)',
+            'rgba(185, 28, 28, 1)',
+            'rgba(109, 40, 217, 1)',
+          ],
+          borderWidth: 1,
+          fill: config.ChartType === 'line',
+          tension: 0.4, // Smooth curves for lines
+        },
+      ],
     };
+  }
 
-    if (type === 'bar') return <Bar data={chartData} options={options} />;
-    return <Line data={chartData} options={options} />;
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: ['pie', 'doughnut'].includes(config.ChartType), // Only show legend for Pie/Doughnut
+        position: 'bottom' as const,
+      },
+      tooltip: {
+        callbacks: {
+          label: function (context: any) {
+            if (isScatter) {
+              const point = context.raw;
+              return `${point.itemName}: (${point.x}, ${point.y})`;
+            } else {
+              let label = context.dataset.label || '';
+              if (label) label += ': ';
+              if (context.parsed.y !== null) {
+                label += context.parsed.y;
+              }
+              return label;
+            }
+          },
+        },
+      },
+    },
+    scales: ['pie', 'doughnut'].includes(config.ChartType) 
+      ? undefined 
+      : {
+          x: isScatter 
+            ? { 
+                type: 'linear', 
+                position: 'bottom',
+                title: { display: true, text: xCol, font: { weight: 'bold' } },
+                grid: {
+                  // Make the X=0 line bold and dark, rest are light
+                  color: (context: any) => context.tick?.value === 0 ? 'rgba(15, 23, 42, 0.8)' : 'rgba(226, 232, 240, 1)',
+                  lineWidth: (context: any) => context.tick?.value === 0 ? 3 : 1,
+                }
+              } 
+            : undefined, // Normal charts use CategoryScale
+          y: { 
+            beginAtZero: false,
+            title: { display: isScatter, text: yCol, font: { weight: 'bold' } },
+            grid: isScatter ? {
+              // Make the Y=0 line bold and dark, rest are light
+              color: (context: any) => context.tick?.value === 0 ? 'rgba(15, 23, 42, 0.8)' : 'rgba(226, 232, 240, 1)',
+              lineWidth: (context: any) => context.tick?.value === 0 ? 3 : 1,
+            } : undefined,
+          },
+        },
+  };
+
+  const ChartComponent =
+    config.ChartType === 'bar' ? Bar :
+    config.ChartType === 'doughnut' ? Doughnut :
+    config.ChartType === 'pie' ? Pie :
+    config.ChartType === 'scatter' ? Scatter : Line;
+
+  return (
+    <div className="w-full h-full min-h-100">
+      <ChartComponent data={chartData} options={options as any} />
+    </div>
+  );
 }

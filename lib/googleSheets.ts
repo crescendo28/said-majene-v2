@@ -58,10 +58,6 @@ const getRowValue = (row: any, keys: string[]) => {
   return undefined;
 };
 
-/**
- * Ambil SEMUA rows tanpa kena limit default getRows().
- * Ini penting supaya delete/replace ga salah row.
- */
 async function getAllRows(sheet: GoogleSpreadsheetWorksheet, pageSize = 500) {
   let offset = 0;
   let allRows: any[] = [];
@@ -77,9 +73,6 @@ async function getAllRows(sheet: GoogleSpreadsheetWorksheet, pageSize = 500) {
   return allRows;
 }
 
-/**
- * Add rows dengan chunk biar aman dari quota / request terlalu besar.
- */
 async function addRowsChunked(
   sheet: GoogleSpreadsheetWorksheet,
   rows: any[],
@@ -89,7 +82,7 @@ async function addRowsChunked(
 
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
-    await sheet.addRows(chunk);
+    await sheet.addRows(chunk, { insert: true });
   }
 }
 
@@ -103,8 +96,6 @@ export const getSheetData = async (sheetName: string) => {
     if (!sheet) return [];
 
     await sheet.loadHeaderRow();
-
-    // Ambil semua rows biar konsisten
     const rows = await getAllRows(sheet);
     return rows.map((row) => row.toObject());
   } catch (error) {
@@ -171,7 +162,7 @@ export const saveGlobalSetting = async (key: string, value: string) => {
     existing.assign({ Value: value });
     await existing.save();
   } else {
-    await sheet.addRow({ Key: key, Value: value });
+    await sheet.addRow({ Key: key, Value: value }, { insert: true });
   }
 };
 
@@ -578,12 +569,25 @@ export const addKonfigRow = async (newData: any) => {
     rowData[getHeader(sheet, k)] = newData[k];
   });
 
-  await sheet.addRow(rowData);
+  await sheet.addRow(rowData, { insert: true });
 };
 
-// =====================
-// IMPORTANT FIX: REPLACE DATA VARIABLE
-// =====================
+export const deleteKonfigRow = async (id: string) => {
+  const doc = await getDoc();
+  const sheet = doc.sheetsByTitle["Konfig"];
+  if (!sheet) throw new Error("Konfig sheet not found");
+
+  await sheet.loadHeaderRow();
+
+  const rows = await getAllRows(sheet);
+  const idKey = getHeader(sheet, "Id");
+
+  const row = rows.find((r) => r.get(idKey) === id);
+  if (row) {
+    await row.delete();
+  }
+};
+
 export const replaceDataForVariable = async (varId: string, newRows: any[]) => {
   const doc = await getDoc();
 
@@ -604,8 +608,6 @@ export const replaceDataForVariable = async (varId: string, newRows: any[]) => {
   }
 
   await sheet.loadHeaderRow();
-
-  // FIX UTAMA: pakai getAllRows biar ga cuma ambil 10 / 100 row pertama
   const rows = await getAllRows(sheet);
 
   const rowsToDelete = rows.filter((r) => {
@@ -613,13 +615,11 @@ export const replaceDataForVariable = async (varId: string, newRows: any[]) => {
     return String(rId) === String(varId);
   });
 
-  // delete dari bawah biar rowNumber ga shifting
   for (const row of rowsToDelete.reverse()) {
     await row.delete();
   }
 
   if (newRows && newRows.length > 0) {
-    // addRows chunked biar ga nabrak limit
     await addRowsChunked(sheet, newRows, 200);
   }
 };
@@ -646,6 +646,7 @@ export const getAnalysisConfig = async () => {
           "YAxisCol",
           "Status",
           "TooltipCol",
+          "Year", // Added Year
         ],
       });
     }
@@ -667,6 +668,7 @@ export const getAnalysisConfig = async () => {
       YAxisCol: getVal(row, "YAxisCol"),
       Status: getVal(row, "Status") || "Non-Aktif",
       TooltipCol: getVal(row, "TooltipCol") || "",
+      Year: getVal(row, "Year") || "", // Added Year
       _rowNumber: row.rowNumber,
     }));
   } catch (error) {
@@ -693,6 +695,7 @@ export const saveAnalysisConfig = async (data: any) => {
     "YAxisCol",
     "Status",
     "TooltipCol",
+    "Year" // Added Year
   ];
 
   if (data.Id) {
@@ -722,7 +725,7 @@ export const saveAnalysisConfig = async (data: any) => {
     newRow[getHeader(sheet, "Id")] = "ANL-" + Date.now();
   }
 
-  await sheet.addRow(newRow);
+  await sheet.addRow(newRow, { insert: true });
 };
 
 export const deleteAnalysisConfig = async (id: string) => {

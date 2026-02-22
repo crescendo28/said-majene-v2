@@ -3,10 +3,12 @@
 import {
   updateKonfig,
   addKonfigRow,
+  deleteKonfigRow, 
   saveGlobalSetting,
   replaceDataForVariable,
   saveAnalysisConfig,
   deleteAnalysisConfig,
+  getAllVariables,
 } from '@/lib/googleSheets';
 
 import { fetchVariableData } from '@/lib/bps';
@@ -83,6 +85,16 @@ export async function createIndicator(prevState: any, formData: FormData) {
     return { success: false, error: 'ID, Label, and Category are required.' };
   }
 
+  const existingVariables = await getAllVariables();
+  const isDuplicate = existingVariables.some((v) => v.Id === id);
+  
+  if (isDuplicate) {
+    return { 
+      success: false, 
+      error: `Gagal: Indikator dengan ID "${id}" sudah ada di database!` 
+    };
+  }
+
   const newData = {
     Id: id,
     Label: label,
@@ -100,7 +112,6 @@ export async function createIndicator(prevState: any, formData: FormData) {
 
   await addKonfigRow(newData);
 
-  // Auto-sync after creation (best effort)
   try {
     await processSyncItem(id);
   } catch (e) {
@@ -114,14 +125,28 @@ export async function createIndicator(prevState: any, formData: FormData) {
   return { success: true };
 }
 
+export async function deleteIndicatorAction(id: string) {
+  if (!id) {
+    return { success: false, error: 'Missing indicator ID.' };
+  }
+
+  try {
+    await deleteKonfigRow(id);
+    revalidatePath('/admin');
+    revalidatePath('/dashboard');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error: any) {
+    console.error(`Failed to delete indicator ${id}:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function updateSettings(formData: FormData) {
   const pubLink = getString(formData, 'publicationLink', '');
-
   await saveGlobalSetting('publication_link', pubLink);
-
   revalidatePath('/');
   revalidatePath('/admin');
-
   return { success: true };
 }
 
@@ -137,26 +162,16 @@ export async function processSyncItem(id: string) {
     if (!id) {
       return { success: false, error: 'Missing variable ID.' };
     }
-
-    console.log(`Starting sync for variable ${id}...`);
-
     const data = await fetchVariableData(id);
 
     if (!data || data.length === 0) {
-      console.warn(`No data found for variable ${id} from BPS.`);
       return { success: false, error: 'No data found from BPS API. Check Variable ID.' };
     }
-
     await replaceDataForVariable(id, data);
-
-    console.log(`Sync successful for ${id}. Rows: ${data.length}`);
-
     revalidatePath('/dashboard');
     revalidatePath('/');
-
     return { success: true };
   } catch (error: any) {
-    console.error(`Sync failed for ${id}:`, error);
     return { success: false, error: error?.message || 'Unknown error' };
   }
 }
@@ -182,6 +197,7 @@ export async function saveAnalysisAction(formData: FormData) {
     YAxisCol: getString(formData, 'yAxis'),
     Status: getString(formData, 'status'),
     TooltipCol: getString(formData, 'tooltipCol'),
+    Year: getString(formData, 'year'), // Added Year saving support
   };
 
   if (!data.Id || !data.Title || !data.SheetName) {
@@ -192,6 +208,7 @@ export async function saveAnalysisAction(formData: FormData) {
 
   revalidatePath('/analysis');
   revalidatePath('/admin/analysis');
+  revalidatePath(`/analysis/${data.Id}`);
 
   return { success: true };
 }

@@ -1,76 +1,75 @@
 import Link from 'next/link';
-import { ArrowRight, FileBarChart, TrendingUp, Activity } from 'lucide-react';
+import { getAnalysisConfig } from '@/lib/googleSheets';
+import { FileText, ArrowRight, BarChart2, Calendar } from 'lucide-react';
 
-export const revalidate = 3600;
+export const revalidate = 0; // Force dynamic fetch for the analysis list
 
-export default function AnalysisIndexPage() {
-  const analyses = [
-      {
-          slug: "ekonomi",
-          title: "Analisis Pergeseran Struktur Ekonomi (Shift-Share)",
-          category: "Ekonomi",
-          desc: "Identifikasi sektor unggulan, potensial, dan tertinggal di Kabupaten Majene dibandingkan dengan Provinsi Sulawesi Barat.",
-          icon: <TrendingUp size={24} className="text-blue-600"/>,
-          color: "bg-blue-50"
-      },
-      {
-          slug: "kemiskinan",
-          title: "Analisis Kemiskinan (Indeks FGT)",
-          category: "Kemiskinan",
-          desc: "Kajian mendalam mengenai Headcount Index, Kedalaman, dan Keparahan Kemiskinan untuk strategi pengentasan yang lebih efektif.",
-          icon: <Activity size={24} className="text-rose-600"/>,
-          color: "bg-rose-50"
-      }
-  ];
+export default async function AnalysisPage() {
+  // Fetch dynamic config from Google Sheets
+  const configs = await getAnalysisConfig();
+  const activeAnalyses = configs.filter((c: any) => c.Status === 'Aktif');
+
+  // Group analyses by category
+  const grouped = activeAnalyses.reduce((acc: any, curr: any) => {
+    const cat = curr.Category || 'Lainnya';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(curr);
+    return acc;
+  }, {});
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] text-slate-900 font-sans pb-20">
-      
-      {/* HEADER */}
-      <section className="bg-slate-900 text-white pt-32 pb-20 px-6 rounded-b-[40px] shadow-xl">
-         <div className="max-w-5xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-black mb-4">Analisis Tematik</h1>
-            <p className="text-slate-400 text-lg">Ulasan mendalam dan visualisasi data khusus dari BPS Kabupaten Majene.</p>
-         </div>
-      </section>
+    <div className="font-sans text-slate-900 pb-20">
+      <main className="max-w-6xl mx-auto px-6 sm:px-10 lg:px-12 pt-12">
+        <header className="mb-12">
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">Analisis Isu Strategis</h1>
+          <p className="text-lg text-slate-600 max-w-3xl leading-relaxed">
+            Kumpulan analisis mendalam berdasarkan data indikator makro Kabupaten Majene.
+          </p>
+        </header>
 
-      {/* CARD GRID */}
-      <div className="max-w-5xl mx-auto px-6 -mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {analyses.map((item) => (
-              <Link href={`/analysis/${item.slug}`} key={item.slug} className="group">
-                  <article className="bg-white rounded-[24px] overflow-hidden shadow-sm border border-slate-100 h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-8 flex flex-col">
-                      
-                      <div className="flex justify-between items-start mb-6">
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${item.color}`}>
-                              {item.icon}
-                          </div>
-                          <span className="p-2 bg-slate-50 rounded-full text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-colors">
-                              <ArrowRight size={20}/>
-                          </span>
-                      </div>
-
-                      <div className="mb-4">
-                          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{item.category}</span>
-                          <h2 className="text-2xl font-bold text-slate-900 mt-2 leading-tight group-hover:text-emerald-600 transition-colors">
-                              {item.title}
-                          </h2>
-                      </div>
-
-                      <p className="text-slate-500 leading-relaxed mb-6 flex-grow">
-                          {item.desc}
-                      </p>
-
-                      <div className="flex items-center gap-2 text-sm font-bold text-emerald-600 mt-auto">
-                          <FileBarChart size={16}/>
-                          <span>Baca Analisis Lengkap</span>
-                      </div>
-
-                  </article>
-              </Link>
-          ))}
-
-      </div>
-    </main>
+        {Object.keys(grouped).length === 0 ? (
+            <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center shadow-sm">
+                <BarChart2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-slate-700">Belum ada analisis yang aktif</h3>
+                <p className="text-slate-500 mt-2">Tambahkan dan aktifkan analisis melalui panel Analysis Admin.</p>
+            </div>
+        ) : (
+            <div className="space-y-12">
+              {Object.keys(grouped).map((category) => (
+                <section key={category}>
+                  <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-3">
+                    <div className="w-2 h-6 bg-blue-600 rounded-full"></div>
+                    {category}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {grouped[category].map((item: any) => (
+                      <Link href={`/analysis/${item.Id}`} key={item.Id} className="group bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all duration-300 flex flex-col h-full">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+                              <FileText size={24} />
+                            </div>
+                            {item.Year && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100">
+                                  <Calendar size={10} /> {item.Year}
+                              </span>
+                            )}
+                        </div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">{item.Title}</h3>
+                        <p className="text-slate-500 text-sm leading-relaxed flex-1 line-clamp-3 mb-6">{item.Description}</p>
+                        <div className="mt-auto flex items-center justify-between">
+                            <span className="text-blue-600 font-bold text-sm flex items-center">
+                              Baca Analisis <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                            </span>
+                            <span className="text-[9px] text-slate-300 font-mono">#{item.Id}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+        )}
+      </main>
+    </div>
   );
 }

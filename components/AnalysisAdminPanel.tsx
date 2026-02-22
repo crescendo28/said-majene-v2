@@ -19,6 +19,7 @@ interface AnalysisConfig {
   XAxisCol: string;
   YAxisCol: string;
   Status: string;
+  Year: string;
 }
 
 export default function AnalysisAdminPanel({ configs }: { configs: AnalysisConfig[] }) {
@@ -28,12 +29,12 @@ export default function AnalysisAdminPanel({ configs }: { configs: AnalysisConfi
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Form State
-  const defaultForm = {
+  // Form State - ADDED "Year: ''" and explicit type here to fix the TypeScript error
+  const defaultForm: AnalysisConfig = {
       Id: '', Title: '', Category: 'Umum', Description: '', 
-      ChartType: 'line', SheetName: '', XAxisCol: '', YAxisCol: '', Status: 'Aktif'
+      ChartType: 'line', SheetName: '', XAxisCol: '', YAxisCol: '', Status: 'Aktif', Year: ''
   };
-  const [formState, setFormState] = useState(defaultForm);
+  const [formState, setFormState] = useState<AnalysisConfig>(defaultForm);
 
   const openAdd = () => {
       setEditingItem(null);
@@ -137,6 +138,11 @@ export default function AnalysisAdminPanel({ configs }: { configs: AnalysisConfi
                                     {item.Status}
                                 </span>
                                 <span className="text-xs text-slate-500 font-bold uppercase tracking-wide">{item.Category}</span>
+                                {item.Year && (
+                                  <span className="text-[10px] bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded font-bold">
+                                    {item.Year}
+                                  </span>
+                                )}
                             </div>
                             <h3 className="text-lg font-bold text-slate-900">{item.Title}</h3>
                             <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 font-medium">
@@ -205,6 +211,19 @@ export default function AnalysisAdminPanel({ configs }: { configs: AnalysisConfi
                                    />
                                </div>
                            </div>
+
+                           <div>
+                            <label className="block text-xs font-bold uppercase mb-1 text-slate-500">
+                                 Tahun Analisis
+                                 </label>
+                                 <input 
+                                 name="year" 
+                                 value={formState.Year}
+                                    onChange={e => setFormState({...formState, Year: e.target.value})}
+                                 placeholder="Contoh: 2024"
+                                 className="w-full border border-slate-300 p-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                 />
+                            </div>
 
                            <div>
                                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Deskripsi / Analisis</label>

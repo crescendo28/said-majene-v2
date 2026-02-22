@@ -4,73 +4,52 @@ import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
-  LineElement,
   PointElement,
-  Title,
+  LineElement,
   Tooltip,
-  Legend,
+  Filler,
 } from 'chart.js';
-import { Chart } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  BarElement,
-  LineElement,
   PointElement,
-  Title,
+  LineElement,
   Tooltip,
-  Legend
+  Filler
 );
 
-export default function HomeChart({ data }: { data: any[] }) {
-  // 1. Filter Data for specific variables
-  // ID 43 = Laju Pertumbuhan (Line)
-  // ID 41 = PDRB ADHK (Bar) - adjusting ID based on your screenshot context, 
-  // if 41 isn't PDRB, we might need to find the correct ID. 
-  // For now we will search by name to be safe or fallback.
-  
-  const growthData = data.filter(d => d.id_variable === '43' || d.variable_name?.includes('Laju Pertumbuhan'));
-  const pdrbData = data.filter(d => d.id_variable === '41' || d.variable_name?.includes('PDRB ADHK'));
+export default function HomeChart({ data, color }: { data: any[], color?: string }) {
+  if (!data || data.length === 0) return null;
 
-  // Get common years
-  const years = [...new Set([...growthData, ...pdrbData].map(d => d.Tahun))].sort();
-  
-  // Take last 5 years only
-  const recentYears = years.slice(-5);
+  // Safely parse Indonesian numbers (e.g. "13,64" -> 13.64) for accurate charting
+  const parseNum = (val: any) => {
+    if (!val) return 0;
+    const parsed = parseFloat(String(val).replace(/,/g, '.'));
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const labels = data.map(d => d.Tahun);
+  const values = data.map(d => parseNum(d.Nilai));
+
+  // Default to a rich blue color, fallback to rose if desired
+  const isRed = color === 'rose' || color === 'red';
+  const borderColor = isRed ? 'rgba(225, 29, 72, 1)' : 'rgba(37, 99, 235, 1)'; 
+  const bgColor = isRed ? 'rgba(225, 29, 72, 0.1)' : 'rgba(37, 99, 235, 0.1)';
 
   const chartData = {
-    labels: recentYears,
+    labels,
     datasets: [
       {
-        type: 'line' as const,
-        label: 'Laju Pertumbuhan (%)',
-        data: recentYears.map(year => {
-          const item = growthData.find(d => d.Tahun === year);
-          return item ? parseFloat(String(item.Nilai).replace(',', '.')) : 0;
-        }),
-        borderColor: '#2563eb', // Blue 600
-        borderWidth: 3,
-        backgroundColor: '#fff',
-        pointBorderColor: '#2563eb',
-        pointRadius: 5,
-        tension: 0.4,
-        yAxisID: 'y',
-      },
-      {
-        type: 'bar' as const,
-        label: 'PDRB ADHK (Triliun Rp)',
-        data: recentYears.map(year => {
-          const item = pdrbData.find(d => d.Tahun === year);
-          // Assuming data is in Miliar/Juta, scaling might be needed visually
-          // If raw is 3,800,000 (Miliar), we divide to make it readable if needed
-          const val = item ? parseFloat(String(item.Nilai).replace(',', '.')) : 0;
-          return val > 1000 ? val / 1000 : val; // Convert to Triliun if strictly needed visual
-        }),
-        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-        borderRadius: 6,
-        yAxisID: 'y1',
+        data: values,
+        borderColor: borderColor,
+        backgroundColor: bgColor,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        fill: true,
+        tension: 0.3, // smooth curve
       },
     ],
   };
@@ -78,29 +57,31 @@ export default function HomeChart({ data }: { data: any[] }) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    interaction: {
-      mode: 'index' as const,
-      intersect: false,
-    },
     plugins: {
-      legend: { position: 'bottom' as const },
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function (context: any) {
+            return ` ${context.parsed.y}`;
+          },
+        },
+      },
     },
     scales: {
-      y: {
-        type: 'linear' as const,
+      x: {
         display: true,
-        position: 'right' as const,
-        title: { display: true, text: 'Pertumbuhan (%)' },
-        grid: { drawOnChartArea: false },
+        grid: { display: false },
+        ticks: {
+          font: { size: 10 },
+          color: '#94a3b8' 
+        }
       },
-      y1: {
-        type: 'linear' as const,
-        display: true,
-        position: 'left' as const,
-        title: { display: true, text: 'PDRB (Triliun Rp)' },
+      y: {
+        display: false,
+        beginAtZero: false, // Ensures the graph zooms in on the variance to show trends!
       },
     },
   };
 
-  return <Chart type='bar' data={chartData} options={options} />;
+  return <Line data={chartData} options={options} />;
 }

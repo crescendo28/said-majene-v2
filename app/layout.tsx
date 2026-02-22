@@ -27,7 +27,7 @@ export default function RootLayout({
             {children}
           </div>
           {/* GLOBAL FOOTER */}
-          <footer className="bg-slate-900 border-t border-slate-800 py-8 px-6">
+          <footer className="bg-slate-900 border-t border-slate-800 py-3 px-1">
             <div className="max-w-7xl mx-auto text-center">
               <p className="text-slate-400 text-sm font-medium">
                 © 2026 BPS Kabupaten Majene - Amanda Chairunisa GP
