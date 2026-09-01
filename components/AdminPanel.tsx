@@ -271,15 +271,47 @@ export default function AdminPanel({ konfigData = [], metadata = [], settings = 
                                     </td>
                                     <td className="p-5"><span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${row.Status === 'Aktif' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>{row.Status}</span></td>
                                     <td className="p-5 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button onClick={() => handleSingleSync(row.Id)} disabled={syncingId === row.Id} className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition-colors disabled:opacity-50" title="Sync Data dari BPS">{syncingId === row.Id ? <Loader2 size={16} className="animate-spin"/> : <RefreshCw size={16} />}</button>
-                                            <button onClick={() => openEditModal(row)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" title="Edit Konfigurasi"><Pencil size={16} /></button>
-                                            
-                                            {/* DELETE BUTTON ADDED HERE */}
-                                            <button onClick={() => handleDelete(row.Id, row.Label)} disabled={deletingId === row.Id} className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 hover:text-rose-700 transition-colors disabled:opacity-50" title="Hapus Indikator">
-                                              {deletingId === row.Id ? <Loader2 size={16} className="animate-spin"/> : <Trash2 size={16} />}
-                                            </button>
-
+                                        <div className="flex justify-end gap-2 items-center min-h-9">
+                                            {syncingId === row.Id ? (
+                                                /* Active Syncing State: Blue Progress Bar */
+                                                <div className="w-28 bg-blue-50 border border-blue-200 rounded-lg p-1.5 flex flex-col gap-1 justify-center animate-in fade-in zoom-in duration-200">
+                                                    <span className="text-[9px] font-bold text-blue-700 text-center uppercase tracking-widest">
+                                                        Menyimpan...
+                                                    </span>
+                                                    <div className="h-1.5 w-full bg-blue-200 rounded-full overflow-hidden">
+                                                        {/* Pulsing animation simulates continuous background writing */}
+                                                        <div className="h-full w-full bg-blue-600 animate-pulse"></div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                /* Default State: Action Buttons */
+                                                <>
+                                                    <button 
+                                                        onClick={() => handleSingleSync(row.Id)} 
+                                                        disabled={deletingId === row.Id} 
+                                                        className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors disabled:opacity-50" 
+                                                        title="Sync Data dari BPS"
+                                                    >
+                                                        <RefreshCw size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => openEditModal(row)} 
+                                                        disabled={deletingId === row.Id} 
+                                                        className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors disabled:opacity-50" 
+                                                        title="Edit Konfigurasi"
+                                                    >
+                                                        <Pencil size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDelete(row.Id, row.Label)} 
+                                                        disabled={deletingId === row.Id} 
+                                                        className="p-2 bg-slate-100 text-rose-500 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-colors disabled:opacity-50" 
+                                                        title="Hapus Indikator"
+                                                    >
+                                                        {deletingId === row.Id ? <Loader2 size={16} className="animate-spin text-rose-600"/> : <Trash2 size={16} />}
+                                                    </button>
+                                                </>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
