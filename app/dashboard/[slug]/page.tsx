@@ -7,7 +7,7 @@ interface PageProps {
 export const revalidate = 3600;
 
 async function fetchDashboardApi(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://said-majene.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
   try {
     const response = await fetch(`${baseUrl}/api/dashboard/${slug}`, {
       cache: 'no-store', 
@@ -20,7 +20,7 @@ async function fetchDashboardApi(slug: string) {
   }
 }
 
-export default async function Page(props: PageProps) {
+export default async function Page(props: PageProps){ 
   const params = await props.params;
   const { slug } = params;
 
@@ -30,6 +30,8 @@ export default async function Page(props: PageProps) {
   // Clean up title for display
   const title = decodeURIComponent(slug).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
+  // Display empty state if the API returns null (404/500) or empty meta
+  if (!result || !result.meta || result.meta.length === 0) {
   // Display empty state if the API returns null (404/500) or empty meta
   if (!result || !result.meta || result.meta.length === 0) {
     return (
@@ -48,6 +50,7 @@ export default async function Page(props: PageProps) {
     );
   }
 
+  // Pass the destructured properties to GenericDashboard
   return (
     <GenericDashboard 
       category={title} 
@@ -55,4 +58,5 @@ export default async function Page(props: PageProps) {
       meta={result.meta} 
     />
   );
+  }
 }
