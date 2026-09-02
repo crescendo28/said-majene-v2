@@ -207,7 +207,7 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
       
       {/* GLOBAL CONTROLS (Sticky) */}
-      <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 shadow-sm transition-all">
+      <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 shadow-sm transition-all">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-4">
           
           {/* Title Section */}
