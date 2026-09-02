@@ -140,10 +140,6 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
     }
   };
 
-  // --- UI RENDER ---
-
-  // Helper to create options - we return 'any' or a broad type, then cast at usage site
-  // This approach is much cleaner for the compiler than complex generics here.
   const createChartOptions = (unit: string) => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -207,7 +203,7 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col">
       
       {/* GLOBAL CONTROLS (Sticky) */}
-      <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 shadow-sm transition-all">
+      <div className="sticky top-12 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 px-3 py-1.8 shadow-sm transition-all">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-4">
           
           {/* Title Section */}
