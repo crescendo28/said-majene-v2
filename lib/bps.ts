@@ -1,4 +1,4 @@
-const API_KEY = "025ff1d7b1f0c0c75843b119834cdd83"; 
+const API_KEY = process.env.BPS_API_KEY; 
 const DOMAIN_ID = "7601"; 
 
 const HEADERS = {
