@@ -7,7 +7,7 @@ interface PageProps {
 export const revalidate = 3600;
 
 async function fetchDashboardApi(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
   try {
     const response = await fetch(`${baseUrl}/api/dashboard/${slug}`, {
       cache: 'no-store', 
