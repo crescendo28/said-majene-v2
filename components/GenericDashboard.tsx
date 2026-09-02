@@ -209,8 +209,8 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
           {/* Title Section */}
           <div>
              <div className="flex items-center gap-2 mb-1">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wider">Kategori</span>
-                <h2 className="text-2xl font-extrabold text-slate-900 capitalize">{category}</h2>
+                <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wider">Kategori</span>
+                <h2 className="text-xl font-bold text-slate-700 capitalize">{category}</h2>
              </div>
              <p className="text-sm text-slate-500">Memantau <span className="font-bold text-slate-900">{safeMeta.length} Indikator</span> strategis</p>
           </div>
