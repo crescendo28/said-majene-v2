@@ -210,7 +210,7 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
           <div>
              <div className="flex items-center gap-2 mb-1">
                 <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-indigo-100 text-indigo-700 uppercase tracking-wider">Kategori</span>
-                <h2 className="text-xl font-bold text-slate-700 capitalize">{category}</h2>
+                <h2 className="text-l font-bold text-slate-800 capitalize">{category}</h2>
              </div>
              <p className="text-sm text-slate-500">Memantau <span className="font-bold text-slate-900">{safeMeta.length} Indikator</span> strategis</p>
           </div>
@@ -415,7 +415,7 @@ export default function GenericDashboard({ data = [], meta = [], category }: Gen
       </div>
 
       {/* Footer */}
-      <footer className="mt-auto py-8 border-t border-slate-200 bg-slate-50 text-center">
+      <footer className="mt-auto py-2 border-t border-slate-200 bg-slate-50 text-center">
         <p className="text-xs text-slate-400">Sumber Data: BPS Web API</p>
       </footer>
     </div>
