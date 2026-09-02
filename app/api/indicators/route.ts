@@ -4,7 +4,7 @@ import { getAllVariables } from '@/lib/googleSheets';
 export async function GET() {
   try {
     const allVariables = await getAllVariables();
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL|| 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
     
     //filter untuk buat katalog variabel yang aktif
     const catalog = allVariables
