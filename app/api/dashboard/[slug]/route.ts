@@ -3,10 +3,10 @@ import { getDashboardData } from '@/lib/googleSheets';
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ slug: string }> } // 1. Type it as a Promise
+  { params }: { params: Promise<{ slug: string }> } 
 ) {
   try {
-    const { slug } = await params; // 2. Await the params to unwrap the slug
+    const { slug } = await params; 
     
     const result = await getDashboardData(slug);
 

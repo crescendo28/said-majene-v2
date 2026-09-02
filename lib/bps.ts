@@ -1,7 +1,6 @@
 const API_KEY = "025ff1d7b1f0c0c75843b119834cdd83"; 
-const DOMAIN_ID = "7601"; // Majene
+const DOMAIN_ID = "7601"; 
 
-// Headers to mimic a real browser (Anti-Block)
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'Referer': 'https://webapi.bps.go.id/developer/',
@@ -14,7 +13,6 @@ const PETA_BULAN: Record<string, number> = {
   "september": 9, "oktober": 10, "november": 11, "desember": 12, "tahun" : 0
 };
 
-// Helper: Robust Fetch
 async function fetchBps(url: string) {
     try {
         const res = await fetch(url, { headers: HEADERS, cache: 'no-store' });
@@ -31,13 +29,11 @@ async function fetchBps(url: string) {
     }
 }
 
-// 1. Get Available Years for a Variable
 async function getYearIds(varId: string) {
     let allYearIds: number[] = [];
     let page = 1;
     let totalPages = 1;
 
-    // Safety limit to prevent infinite loops if API misbehaves
     const MAX_PAGES = 20; 
 
     do {
@@ -63,7 +59,7 @@ async function getYearIds(varId: string) {
     return allYearIds;
 }
 
-// 2. Main Function: Fetch Data
+// ambil data dari webAPI
 export async function fetchVariableData(varId: string) {
     console.log(`Fetching available years for variable ${varId}...`);
     const yearIds = await getYearIds(varId);
@@ -75,7 +71,7 @@ export async function fetchVariableData(varId: string) {
 
     console.log(`Found ${yearIds.length} years for variable ${varId}. Fetching data...`);
 
-    // Chunk years to avoid URL length limits
+    // limit data per dua tahun
     const chunks = [];
     for (let i = 0; i < yearIds.length; i += 2) { // Conservative chunk size of 2
         chunks.push(yearIds.slice(i, i + 2));
@@ -84,8 +80,8 @@ export async function fetchVariableData(varId: string) {
     let allRows: any[] = [];
 
     for (const chunk of chunks) {
-        const yearParam = chunk.join(':'); // API expects colon separated IDs
-        // Note: The endpoint documentation says 'th' parameter
+        const yearParam = chunk.join(':'); 
+       
         const url = `https://webapi.bps.go.id/v1/api/list/model/data/domain/${DOMAIN_ID}/var/${varId}/th/${yearParam}/key/${API_KEY}/`;
         
         const json = await fetchBps(url);
@@ -101,17 +97,16 @@ export async function fetchVariableData(varId: string) {
     return allRows;
 }
 
-// 3. Transform to Sheet Format (Vertical / Long Form)
+// transform untuk masuk ke google sheet
 function processJsonToRows(json: any, requestedVarId: string) {
     const rows: any[] = [];
     
-    // Safety checks for API response structure
     if (!json.var || !json.vervar || !json.tahun || !json.turtahun || !json.datacontent) {
         return [];
     }
 
     const varInfo = json.var[0];
-    const turvarId = json.turvar ? json.turvar[0].val : 0; // Sometimes turvar is missing or 0
+    const turvarId = json.turvar ? json.turvar[0].val : 0; 
 
     json.vervar.forEach((cat: any) => {
         const idKategori = cat.val;
@@ -127,21 +122,21 @@ function processJsonToRows(json: any, requestedVarId: string) {
                 const periodNum = PETA_BULAN[labelLower];
 
                 if (periodNum !== undefined) {
-                    // Construct key based on BPS logic: idKategori + idVar + idTurvar + idTahun + idTurtahun
+                    
                     const key = String(idKategori) + String(varInfo.val) + String(turvarId) + String(tahunId) + String(periodId);
                     
                     if (json.datacontent[key] !== undefined) {
-                        // Construct Date String "01/MM/YYYY" for 'Pilih Tahun' (Sheet Requirement)
+                        
                         const tgl = `01/${String(periodNum).padStart(2,'0')}/${tahunAngka}`;
                         
-                        // Exact mapping to your Google Sheet Columns
+                        
                         rows.push({
                             id_domain: DOMAIN_ID,
                             kategori: namaKategori,
                             Tahun: tahunAngka,
                             Periode: periodNum,
                             'Pilih Tahun': tgl,
-                            id_variable: requestedVarId, // Use the requested ID to ensure consistency
+                            id_variable: requestedVarId, 
                             'Nama Variabel': varInfo.label,
                             Nilai: json.datacontent[key],
                             Satuan: varInfo.unit

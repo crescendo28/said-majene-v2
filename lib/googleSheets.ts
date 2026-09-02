@@ -1,9 +1,7 @@
 import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
 
-// =====================
-// ENV
-// =====================
+
 const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
 const SHEET_ID = process.env.GOOGLE_SHEET_ID;
@@ -760,5 +758,103 @@ export const getAnalysisData = async (sheetName: string) => {
   } catch (e) {
     console.error(`Error fetching data from sheet ${sheetName}:`, e);
     return [];
+  }
+};
+
+// =====================
+// SINGLE INDICATOR DATA
+// =====================
+export const getIndicatorById = async (id: string) => {
+  try {
+    const doc = await getDoc();
+    const konfigSheet = doc.sheetsByTitle["Konfig"];
+    const dataSheet = doc.sheetsByTitle["Data"];
+    
+    if (!konfigSheet || !dataSheet) return { error: "Sheets not found" };
+
+    await Promise.all([konfigSheet.loadHeaderRow(), dataSheet.loadHeaderRow()]);
+
+    const [konfigRows, dataRows] = await Promise.all([
+      getAllRows(konfigSheet),
+      getAllRows(dataSheet),
+    ]);
+
+    const idKey = getHeader(konfigSheet, "Id");
+    const statusKey = getHeader(konfigSheet, "Status");
+    const filterKey = getHeader(konfigSheet, "DataFilter");
+    const yearKey = getHeader(konfigSheet, "FilterTahun");
+    const labelKey = getHeader(konfigSheet, "Label");
+    const catKey = getHeader(konfigSheet, "Kategori");
+
+    // 1. Find the specific config
+    const targetConfigRow = konfigRows.find(
+      (row) => String(row.get(idKey)) === String(id) && row.get(statusKey) === "Aktif"
+    );
+
+    if (!targetConfigRow) return null; // Returns null if not found or not active
+
+    // 2. Filter raw data for this specific ID
+    const rawData = dataRows.map((row) => row.toObject());
+    const associatedData = rawData.filter(
+      (row) => String(getRowValue(row, ["id_variable", "var_id", "Id"])) === String(id)
+    );
+
+    // 3. Apply the exact same logic/filters as getDashboardData
+    const finalData = associatedData
+      .filter((row) => {
+        const filterStr = targetConfigRow.get(filterKey);
+        if (filterStr && String(filterStr).trim() !== "") {
+          const rowCat = getRowValue(row, [
+            "kategori", "Kategori", "category", "Category", "lapangan_usaha", "sub_kategori",
+          ]);
+          const catStr = rowCat ? String(rowCat).trim().toLowerCase() : "";
+          const filterVal = String(filterStr).trim();
+
+          if (filterVal.startsWith("!")) {
+            if (catStr === filterVal.substring(1).trim().toLowerCase()) return false;
+          } else {
+            if (catStr !== filterVal.toLowerCase()) return false;
+          }
+        }
+
+        const yearFilter = targetConfigRow.get(yearKey);
+        if (yearFilter && String(yearFilter).trim() !== "") {
+          const rowYear = getRowValue(row, ["Tahun", "tahun", "Year", "year"]);
+          if (String(rowYear) !== String(yearFilter).trim()) return false;
+        }
+
+        return true;
+      })
+      .map((row) => ({
+        ...row,
+        id_variable: id,
+        Tahun: getRowValue(row, ["Tahun", "tahun", "Year", "year"]),
+        Nilai: getRowValue(row, ["Nilai", "nilai", "Value", "value"]),
+        Satuan: getRowValue(row, ["Satuan", "satuan", "Unit", "unit"]),
+        variable_name: targetConfigRow.get(labelKey) || id,
+        kategori_data: getRowValue(row, [
+          "kategori", "Kategori", "category", "Category", "lapangan_usaha",
+        ]),
+      }));
+
+    // 4. Format the Meta data as an array (to match your existing UI components)
+    const metaData = [{
+      Id: targetConfigRow.get(idKey),
+      Label: targetConfigRow.get(labelKey),
+      Kategori: targetConfigRow.get(catKey),
+      Status: targetConfigRow.get(statusKey),
+      Deskripsi: targetConfigRow.get(getHeader(konfigSheet, "Deskripsi")) || "",
+      TipeGrafik: targetConfigRow.get(getHeader(konfigSheet, "TipeGrafik")) || "line",
+      Warna: targetConfigRow.get(getHeader(konfigSheet, "Warna")) || "blue",
+      TrendLogic: targetConfigRow.get(getHeader(konfigSheet, "TrendLogic")) || "UpIsGood",
+      TargetRPJMD: targetConfigRow.get(getHeader(konfigSheet, "TargetRPJMD")) || "",
+      DataFilter: targetConfigRow.get(filterKey) || "",
+      FilterTahun: targetConfigRow.get(yearKey) || "",
+    }];
+
+    return { meta: metaData, data: finalData };
+  } catch (error) {
+    console.error("getIndicatorById error:", error);
+    return { error: "Failed to fetch indicator" };
   }
 };
