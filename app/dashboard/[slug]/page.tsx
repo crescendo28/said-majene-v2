@@ -24,15 +24,13 @@ export default async function Page(props: PageProps){
   const params = await props.params;
   const { slug } = params;
 
-  // Fetch the data from your new API endpoint
+  
   const result = await fetchDashboardApi(slug);
 
-  // Clean up title for display
+  
   const title = decodeURIComponent(slug).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-  // Display empty state if the API returns null (404/500) or empty meta
-  if (!result || !result.meta || result.meta.length === 0) {
-  // Display empty state if the API returns null (404/500) or empty meta
+  
   if (!result || !result.meta || result.meta.length === 0) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 p-12 text-center flex flex-col items-center justify-center">
@@ -48,9 +46,9 @@ export default async function Page(props: PageProps){
         </div>
       </div>
     );
-  }
+  } 
 
-  // Pass the destructured properties to GenericDashboard
+ 
   return (
     <GenericDashboard 
       category={title} 
@@ -58,5 +56,4 @@ export default async function Page(props: PageProps){
       meta={result.meta} 
     />
   );
-  }
 }
